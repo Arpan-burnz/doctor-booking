@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(PATIENT)
+  phone         String?
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  doctor        Doctor?
+  patient       Patient?
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Doctor {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  specialization  String
+  licenseNumber   String   @unique
+  consultationFee Int
+  bio             String?
+  isVerified      Boolean  @default(false)
+  experience      Int?
+  createdAt       DateTime @default(now())
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots           AvailabilitySlot[]
+  appointments    Appointment[]
+  reviews         Review[]
+}
+
+model Patient {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  dateOfBirth  DateTime?
+  bloodGroup   String?
+  address      String?
+  createdAt    DateTime  @default(now())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  reviews      Review[]
+}
+
+model AvailabilitySlot {
+  id          String   @id @default(uuid())
+  doctorId    String
+  slotDate    DateTime
+  startTime   String
+  endTime     String
+  isBooked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  doctor      Doctor      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment Appointment?
+}
+
+model Appointment {
+  id            String            @id @default(uuid())
+  patientId     String
+  doctorId      String
+  slotId        String            @unique
+  status        AppointmentStatus @default(PENDING)
+  notes         String?
+  videoLink     String?
+  bookedAt      DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  patient       Patient          @relation(fields: [patientId], references: [id])
+  doctor        Doctor           @relation(fields: [doctorId], references: [id])
+  slot          AvailabilitySlot @relation(fields: [slotId], references: [id])
+  prescriptions Prescription[]
+  review        Review?
+}
+
+model Prescription {
+  id            String   @id @default(uuid())
+  appointmentId String
+  fileUrl       String
+  diagnosis     String?
+  issuedAt      DateTime @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  patientId     String
+  doctorId      String
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  patient       Patient     @relation(fields: [patientId], references: [id])
+  doctor        Doctor      @relation(fields: [doctorId], references: [id])
+}
+
+model Notification {
+  id      String   @id @default(uuid())
+  userId  String
+  type    String
+  message String
+  isRead  Boolean  @default(false)
+  sentAt  DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

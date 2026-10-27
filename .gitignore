@@ -1,0 +1,75 @@
+# ===========================
+# Environment Variables (NEVER commit these)
+# ===========================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+
+# ===========================
+# Node.js
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# ===========================
+# Build Outputs
+# ===========================
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+next-env.d.ts
+
+# ===========================
+# Misc / OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+*.pem
+*.log
+
+# ===========================
+# IDE / Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===========================
+# Testing
+# ===========================
+coverage/
+.nyc_output/
+
+# ===========================
+# Vercel / Deployment
+# ===========================
+.vercel
+
+# ===========================
+# Prisma
+# ===========================
+# prisma/migrations are usually committed; only ignore generated client if needed
+# prisma/generated/
+
+# ===========================
+# Uploads / Temporary files
+# ===========================
+uploads/
+temp/
+tmp/
