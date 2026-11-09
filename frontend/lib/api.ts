@@ -24,10 +24,8 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
-          const res = await axios.post(
-            'http://localhost:5000/api/auth/refresh',
-            { refreshToken }
-          );
+          const refreshUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/refresh`;
+          const res = await axios.post(refreshUrl, { refreshToken });
           const { accessToken, refreshToken: newRefresh } = res.data.data;
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', newRefresh);

@@ -95,19 +95,19 @@ export default function PatientPrescriptions() {
         return rawName.replace(/^[0-9a-fA-F-]{36}-/, '');
     };
 
-    // Get doctor display name mappings or defaults
-    const getDoctorDisplayName = (specialization: string) => {
-        const spec = specialization?.toLowerCase() || '';
-        if (spec.includes('cardiol')) return 'Dr. Sharma';
-        if (spec.includes('neuro')) return 'Dr. Mehta';
-        if (spec.includes('dentist') || spec.includes('dental')) return 'Dr. Kapoor';
-        return `Dr. ${specialization || 'Specialist'}`;
+    // Get doctor display name from database doctor record or specialization
+    const getDoctorDisplayName = (doctor?: any) => {
+        if (!doctor) return 'Doctor';
+        if (doctor.name?.trim()) return doctor.name;
+        if (doctor.user?.email) return doctor.user.email;
+        return `Dr. ${doctor.specialization || 'Specialist'}`;
     };
 
     // Filter list
     const filteredPrescriptions = prescriptions.filter(p => {
-        const doctorSpecialty = p.appointment?.doctor?.specialization || '';
-        const doctorName = getDoctorDisplayName(doctorSpecialty);
+        const doctorObj = p.appointment?.doctor;
+        const doctorSpecialty = doctorObj?.specialization || '';
+        const doctorName = getDoctorDisplayName(doctorObj);
         const diagnosis = p.diagnosis || '';
         const filename = getCleanFileName(p.fileUrl);
 
@@ -168,17 +168,16 @@ export default function PatientPrescriptions() {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
+        <div className="min-h-screen flex items-center justify-center bg-[#090d16] text-slate-400">
             <div className="text-center flex flex-col items-center gap-3">
-                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                <p className="text-zinc-550 text-xs font-semibold tracking-wider font-sans">Tethering diagnostics overview...</p>
+                <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
+                <p className="text-slate-400 text-xs font-semibold tracking-wider font-sans">Tethering diagnostics overview...</p>
             </div>
         </div>
     );
 
     return (
-        <div className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 ${isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-slate-50 text-slate-800'
-            }`}>
+        <div className="min-h-screen flex font-sans select-none antialiased bg-transparent text-slate-100 selection:bg-purple-900/40 selection:text-purple-200">
 
             {/* Shared Sidebar */}
             <PatientSidebar />
@@ -189,15 +188,15 @@ export default function PatientPrescriptions() {
                 {/* Top Header Row */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-905'}`}>Prescriptions</h1>
-                        <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>All prescriptions from your doctors</p>
+                        <h1 className="text-xl font-bold tracking-tight text-white">Prescriptions</h1>
+                        <p className="text-xs font-medium mt-1 text-slate-400">All prescriptions from your doctors</p>
                     </div>
 
                     <button
                         onClick={() => setIsUploadOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer active:scale-95 border-0 outline-none"
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer"
                     >
-                        <Upload className="w-4 h-4" />
+                        <Upload className="w-3.5 h-3.5" />
                         <span>Upload</span>
                     </button>
                 </div>
@@ -205,58 +204,47 @@ export default function PatientPrescriptions() {
                 {/* Stats Row Grid (3 columns to match mockup cards) */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     {[
-                        { label: 'Total', value: totalCount, icon: <FileSpreadsheet className="w-5 h-5 text-blue-400" />, bg: 'bg-blue-600/10 border-blue-900/30' },
-                        { label: 'Active', value: activeCount, icon: <LinkIcon className="w-5 h-5 text-emerald-450" />, bg: 'bg-emerald-600/10 border-emerald-900/30' },
-                        { label: 'Expired', value: expiredCount, icon: <Clock className="w-5 h-5 text-amber-500" />, bg: 'bg-amber-600/10 border-amber-900/30' },
+                        { label: 'Total', value: totalCount, icon: <FileSpreadsheet className="w-5 h-5 text-sky-400" />, bg: 'bg-sky-500/10 border-sky-500/20' },
+                        { label: 'Active', value: activeCount, icon: <LinkIcon className="w-5 h-5 text-emerald-400" />, bg: 'bg-emerald-500/10 border-emerald-500/20' },
+                        { label: 'Expired', value: expiredCount, icon: <Clock className="w-5 h-5 text-amber-400" />, bg: 'bg-amber-500/10 border-amber-500/20' },
                     ].map((s, idx) => (
-                        <div key={idx} className={`rounded-xl p-5 flex flex-col justify-between hover:-translate-y-0.5 transition-all shadow-xs min-h-[110px] border ${isDark
-                            ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                            : 'bg-white border-slate-202 hover:border-slate-300'
-                            }`}>
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.bg}`}>
+                        <div key={idx} className="rounded-2xl p-5 flex flex-col justify-between hover:-translate-y-0.5 transition-all shadow-lg shadow-black/30 min-h-[110px] border border-[#1f293d] bg-[#111827] hover:border-slate-700">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${s.bg}`}>
                                 {s.icon}
                             </div>
                             <div className="mt-3">
-                                <div className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{s.value}</div>
-                                <div className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{s.label}</div>
+                                <div className="text-2xl font-bold tracking-tight text-white">{s.value}</div>
+                                <div className="text-[10px] font-bold uppercase tracking-widest mt-0.5 text-slate-400">{s.label}</div>
                             </div>
                         </div>
                     ))}
                 </div>
 
                 {/* Prescription List block */}
-                <div className={`rounded-3xl p-6 border transition-all ${isDark ? 'bg-zinc-900 border-zinc-850' : 'bg-white border-slate-205 shadow-sm'
-                    }`}>
+                <div className="rounded-3xl p-6 border border-[#1f293d] bg-[#111827] shadow-xl shadow-black/40">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>All prescriptions</h3>
+                        <h3 className="text-sm font-bold text-white">All prescriptions</h3>
                         <div className="flex items-center gap-3">
                             {/* Search */}
                             <div className="relative">
-                                <Search className={`absolute left-3 top-2.5 w-3.5 h-3.5 ${isDark ? 'text-zinc-550' : 'text-slate-400'}`} />
+                                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" />
                                 <input
                                     type="text"
                                     placeholder="Search file, doctor, diagnosis..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className={`pl-9 pr-4 py-1.8 text-xs font-semibold rounded-xl outline-none transition-all border ${isDark
-                                        ? 'bg-zinc-950 border-zinc-800 focus:border-blue-500 text-zinc-300 placeholder:text-zinc-600'
-                                        : 'bg-slate-50 border-slate-200 focus:border-blue-500 text-slate-700 placeholder:text-slate-450'
-                                        }`}
+                                    className="pl-9 pr-4 py-2 text-xs font-semibold rounded-xl outline-none transition-all border bg-[#0d121f] border-[#1f293d] focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-white placeholder:text-slate-500"
                                 />
                             </div>
                             {/* Filter pills */}
-                            <div className={`flex items-center p-0.8 rounded-xl border ${isDark ? 'bg-zinc-950 border-zinc-800/80' : 'bg-slate-100 border-slate-200'}`}>
+                            <div className="flex items-center p-1 rounded-xl border bg-[#0d121f] border-[#1f293d]">
                                 {(['ALL', 'ACTIVE', 'EXPIRED'] as const).map((mode) => (
                                     <button
                                         key={mode}
                                         onClick={() => setStatusFilter(mode)}
-                                        className={`px-3 py-1.2 rounded-lg text-[9px] font-extrabold uppercase tracking-wide transition-all cursor-pointer ${statusFilter === mode
-                                            ? isDark
-                                                ? 'bg-zinc-850 text-white'
-                                                : 'bg-white text-slate-800 shadow-sm border border-slate-200/50'
-                                            : isDark
-                                                ? 'text-zinc-500 hover:text-zinc-300'
-                                                : 'text-slate-500 hover:text-slate-800'
+                                        className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${statusFilter === mode
+                                            ? 'bg-sky-500 text-slate-950 font-medium'
+                                            : 'text-slate-400 hover:text-white'
                                             }`}
                                     >
                                         {mode}
@@ -268,9 +256,9 @@ export default function PatientPrescriptions() {
 
                     {filteredPrescriptions.length === 0 ? (
                         <div className="text-center py-16">
-                            <FileText className={`w-12 h-12 mx-auto mb-3.5 ${isDark ? 'text-zinc-705' : 'text-slate-300'}`} />
-                            <p className={`text-xs font-bold tracking-widest uppercase ${isDark ? 'text-zinc-500' : 'text-slate-450'}`}>No prescriptions found</p>
-                            <p className={`text-[11px] mt-1.5 ${isDark ? 'text-zinc-600' : 'text-slate-500'}`}>
+                            <FileText className="w-12 h-12 mx-auto mb-3.5 text-slate-600" />
+                            <p className="text-xs font-bold tracking-widest uppercase text-slate-400">No prescriptions found</p>
+                            <p className="text-[11px] mt-1.5 text-slate-500">
                                 {searchQuery || statusFilter !== 'ALL' ? 'Try adjusting your filters or search criteria' : 'Any prescriptions shared by your doctors will show up here.'}
                             </p>
                         </div>
@@ -278,8 +266,7 @@ export default function PatientPrescriptions() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className={`border-b text-[10px] font-bold tracking-wider ${isDark ? 'border-zinc-800/80 text-zinc-500' : 'border-slate-105 text-slate-400'
-                                        }`}>
+                                    <tr className="border-b border-[#1f293d] text-[10px] font-bold tracking-wider text-slate-400">
                                         <th className="pb-3 font-extrabold uppercase">File</th>
                                         <th className="pb-3 font-extrabold uppercase">Doctor</th>
                                         <th className="pb-3 font-extrabold uppercase">Diagnosis</th>
@@ -288,44 +275,36 @@ export default function PatientPrescriptions() {
                                         <th className="pb-3 font-extrabold uppercase text-right">Download</th>
                                     </tr>
                                 </thead>
-                                <tbody className={`divide-y ${isDark ? 'divide-zinc-800/60' : 'divide-slate-100'}`}>
+                                <tbody className="divide-y divide-[#1f293d]">
                                     {filteredPrescriptions.map((p) => {
                                         const active = isPrescriptionActive(p.issuedAt);
                                         const cleanName = getCleanFileName(p.fileUrl);
-                                        const doctorSpecialty = p.appointment?.doctor?.specialization || '';
-                                        const doctorName = getDoctorDisplayName(doctorSpecialty);
+                                        const doctorName = getDoctorDisplayName(p.appointment?.doctor);
                                         return (
-                                            <tr key={p.id} className="text-xs transition-colors hover:bg-zinc-850/5 dark:hover:bg-zinc-800/5">
+                                            <tr key={p.id} className="text-xs transition-colors hover:bg-[#162032]/60">
                                                 <td className="py-4.5 pr-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${isDark
-                                                            ? 'bg-rose-500/10 border-rose-900/30 text-rose-455'
-                                                            : 'bg-rose-50 border-rose-100 text-rose-650'
-                                                            }`}>
+                                                        <div className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 bg-sky-500/10 border-sky-500/20 text-sky-400">
                                                             <FileText className="w-4.5 h-4.5" />
                                                         </div>
-                                                        <span className={`font-bold transition-all text-xs ${isDark ? 'text-white hover:text-blue-400' : 'text-slate-900 hover:text-blue-600'}`}>
+                                                        <span className="font-bold transition-all text-xs text-white hover:text-sky-400">
                                                             {cleanName}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className={`py-4.5 font-bold ${isDark ? 'text-zinc-200' : 'text-slate-800'}`}>
+                                                <td className="py-4.5 font-bold text-slate-200">
                                                     {doctorName}
                                                 </td>
-                                                <td className={`py-4.5 font-medium ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+                                                <td className="py-4.5 font-medium text-slate-400">
                                                     {p.diagnosis || 'General checkout'}
                                                 </td>
-                                                <td className="py-4.5 font-medium">
+                                                <td className="py-4.5 font-medium text-slate-400">
                                                     {formatShortDate(p.issuedAt)}
                                                 </td>
                                                 <td className="py-4.5">
                                                     <span className={`text-[10px] font-bold tracking-wide px-3.5 py-1 rounded-full border select-none ${active
-                                                        ? isDark
-                                                            ? 'bg-emerald-950/20 text-emerald-400 border-emerald-900/35'
-                                                            : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                                        : isDark
-                                                            ? 'bg-zinc-800/40 text-zinc-400 border-zinc-800'
-                                                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                        ? 'bg-emerald-950/30 text-emerald-400 border-emerald-500/30'
+                                                        : 'bg-[#162032] text-slate-400 border-[#1f293d]'
                                                         }`}>
                                                         {active ? 'Active' : 'Expired'}
                                                     </span>
@@ -335,12 +314,9 @@ export default function PatientPrescriptions() {
                                                         href={p.fileUrl}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className={`inline-flex w-8 h-8 rounded-lg items-center justify-center border cursor-pointer active:scale-95 transition-all ${isDark
-                                                            ? 'bg-zinc-950 hover:bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-white'
-                                                            : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900 shadow-sm font-semibold'
-                                                            }`}
+                                                        className="inline-flex w-8 h-8 rounded-lg items-center justify-center border cursor-pointer active:scale-95 transition-all bg-[#162032] hover:bg-slate-800 border-[#1f293d] text-slate-400 hover:text-white"
                                                     >
-                                                        <Download className="w-3.5 h-3.5" />
+                                                        <Download className="w-3.5 h-3.5 text-sky-400" />
                                                     </a>
                                                 </td>
                                             </tr>
@@ -356,11 +332,10 @@ export default function PatientPrescriptions() {
 
             {/* Upload Dialog Modal */}
             {isUploadOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs transition-opacity duration-300">
-                    <div className={`w-full max-w-md rounded-3xl p-6 border transition-all animate-in zoom-in-95 duration-200 ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-200 text-slate-800'
-                        }`}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300">
+                    <div className="w-full max-w-md rounded-3xl p-6 border border-[#1f293d] bg-[#111827] text-white shadow-2xl transition-all animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="font-bold text-base">Upload Prescription</h3>
+                            <h3 className="font-bold text-base text-white">Upload Prescription</h3>
                             <button
                                 onClick={() => {
                                     setIsUploadOpen(false);
@@ -369,8 +344,7 @@ export default function PatientPrescriptions() {
                                     setDiagnosisInput('');
                                     setSelectedFile(null);
                                 }}
-                                className={`p-1 rounded-lg transition-colors cursor-pointer ${isDark ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'
-                                    }`}
+                                className="p-1 rounded-lg transition-colors cursor-pointer hover:bg-[#162032] text-slate-400 hover:text-white"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -379,17 +353,14 @@ export default function PatientPrescriptions() {
                         <form onSubmit={handleUploadSubmit} className="space-y-4">
                             {/* Target Appointment Details */}
                             <div className="space-y-1">
-                                <label className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Target Appointment *
                                 </label>
                                 <select
                                     required
                                     value={selectedAppointmentId}
                                     onChange={(e) => setSelectedAppointmentId(e.target.value)}
-                                    className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold outline-none transition-all cursor-pointer ${isDark
-                                        ? 'bg-zinc-950 border-zinc-805 text-zinc-200 focus:border-blue-500'
-                                        : 'bg-slate-50 border-slate-202 text-slate-800 focus:border-blue-500'
-                                        }`}
+                                    className="w-full px-3 py-2.5 rounded-xl border text-xs font-semibold outline-none transition-all cursor-pointer bg-[#0d121f] border-[#1f293d] text-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                                 >
                                     <option value="">Select Appointment</option>
                                     {appointments
@@ -409,7 +380,7 @@ export default function PatientPrescriptions() {
 
                             {/* Diagnosis inputs */}
                             <div className="space-y-1">
-                                <label className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Diagnosis (Optional)
                                 </label>
                                 <input
@@ -417,22 +388,16 @@ export default function PatientPrescriptions() {
                                     placeholder="e.g. Hypertension, Flu, Routine Consult"
                                     value={diagnosisInput}
                                     onChange={(e) => setDiagnosisInput(e.target.value)}
-                                    className={`w-full px-3 py-2.5 rounded-xl border text-xs font-semibold outline-none transition-all ${isDark
-                                        ? 'bg-zinc-955 bg-zinc-950 border-zinc-805 placeholder:text-zinc-600 focus:border-blue-500 text-zinc-100'
-                                        : 'bg-slate-50 border-slate-202 placeholder:text-slate-400 focus:border-blue-500 text-slate-800'
-                                        }`}
+                                    className="w-full px-3 py-2.5 rounded-xl border text-xs font-semibold outline-none transition-all bg-[#0d121f] border-[#1f293d] placeholder:text-slate-500 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-white"
                                 />
                             </div>
 
                             {/* File upload selector */}
                             <div className="space-y-1">
-                                <label className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Select Document * (PDF / Images)
                                 </label>
-                                <div className={`border-2 border-dashed rounded-xl p-4.5 flex flex-col items-center justify-center transition-all cursor-pointer relative group ${isDark
-                                    ? 'border-zinc-800 hover:border-zinc-650 bg-zinc-950/40 hover:bg-zinc-950'
-                                    : 'border-slate-200 hover:border-slate-350 bg-slate-50/50 hover:bg-slate-50'
-                                    }`}>
+                                <div className="border-2 border-dashed rounded-xl p-4.5 flex flex-col items-center justify-center transition-all cursor-pointer relative group border-[#1f293d] hover:border-sky-500/40 bg-[#0d121f] hover:bg-[#162032]">
                                     <input
                                         type="file"
                                         accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
@@ -444,12 +409,11 @@ export default function PatientPrescriptions() {
                                         }}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
-                                    <FileDown className={`w-7 h-7 mb-2 transition-transform duration-250 group-hover:scale-105 ${isDark ? 'text-zinc-600 group-hover:text-zinc-400' : 'text-slate-400 group-hover:text-slate-655'
-                                        }`} />
-                                    <span className="text-[11px] font-bold">
+                                    <FileDown className="w-7 h-7 mb-2 transition-transform duration-250 group-hover:scale-105 text-slate-500 group-hover:text-sky-400" />
+                                    <span className="text-[11px] font-bold text-white">
                                         {selectedFile ? selectedFile.name : 'Click or drag file here'}
                                     </span>
-                                    <span className={`text-[9px] mt-0.5 ${isDark ? 'text-zinc-600' : 'text-slate-450'}`}>
+                                    <span className="text-[9px] mt-0.5 text-slate-400">
                                         {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Max limit: 5MB'}
                                     </span>
                                 </div>
@@ -457,7 +421,7 @@ export default function PatientPrescriptions() {
 
                             {/* Error block */}
                             {errorMsg && (
-                                <div className={`p-3 rounded-xl text-xs font-semibold text-center border bg-red-500/10 text-red-500 border-red-900/30`}>
+                                <div className="p-3 rounded-xl text-xs font-semibold text-center border bg-rose-950/30 text-rose-300 border-rose-500/30">
                                     {errorMsg}
                                 </div>
                             )}
@@ -474,17 +438,14 @@ export default function PatientPrescriptions() {
                                         setSelectedFile(null);
                                     }}
                                     disabled={uploading}
-                                    className={`flex-1 py-2.5 rounded-xl border text-xs font-extrabold cursor-pointer active:scale-97 transition-all ${isDark
-                                        ? 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-850'
-                                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                                        }`}
+                                    className="flex-1 py-2.5 rounded-xl border text-xs font-bold cursor-pointer active:scale-97 transition-all border-[#1f293d] bg-[#162032] text-slate-300 hover:text-white hover:bg-slate-800"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={uploading}
-                                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/40 text-white text-xs font-extrabold rounded-xl transition-all shadow-md active:scale-97 cursor-pointer border-0 outline-none flex items-center justify-center gap-1.5"
+                                    className="flex-1 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-slate-950 font-medium rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                                 >
                                     {uploading ? (
                                         <>

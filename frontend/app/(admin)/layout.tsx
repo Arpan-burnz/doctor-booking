@@ -23,9 +23,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-[#0e0e10] flex font-sans select-none antialiased text-zinc-100">
+    <div className="min-h-screen bg-transparent flex font-sans select-none antialiased text-slate-100 selection:bg-purple-900/40 selection:text-purple-200">
       <AdminSidebar />
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-transparent">
         {children}
       </div>
     </div>

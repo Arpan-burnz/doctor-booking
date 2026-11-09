@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Search,
   User as UserIcon,
+  Loader2,
 } from 'lucide-react';
 
 export default function AdminDoctors() {
@@ -26,7 +27,7 @@ export default function AdminDoctors() {
   useEffect(() => {
     Promise.all([
       api.get('/admin/stats'),
-      api.get('/admin/doctors')
+      api.get('/admin/doctors'),
     ]).then(([statsRes, docRes]) => {
       if (statsRes.data.success) {
         setStats(statsRes.data.data);
@@ -45,7 +46,7 @@ export default function AdminDoctors() {
       setStats(prev => ({
         ...prev,
         pendingDoctors: prev.pendingDoctors - 1,
-        totalDoctors: prev.totalDoctors + 1
+        totalDoctors: prev.totalDoctors + 1,
       }));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Verification failed');
@@ -60,7 +61,7 @@ export default function AdminDoctors() {
       setStats(prev => ({
         ...prev,
         suspendedDoctors: prev.suspendedDoctors + 1,
-        totalDoctors: prev.totalDoctors - 1
+        totalDoctors: prev.totalDoctors - 1,
       }));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Suspension failed');
@@ -74,7 +75,7 @@ export default function AdminDoctors() {
       setStats(prev => ({
         ...prev,
         suspendedDoctors: prev.suspendedDoctors - 1,
-        totalDoctors: prev.totalDoctors + 1
+        totalDoctors: prev.totalDoctors + 1,
       }));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Reinstate failed');
@@ -82,7 +83,14 @@ export default function AdminDoctors() {
   };
 
   if (loading) {
-    return <div className="p-8 text-zinc-400">Loading doctors...</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+          <p className="text-slate-400 text-xs">Loading doctors</p>
+        </div>
+      </div>
+    );
   }
 
   const verifiedDoctors = stats.totalDoctors;
@@ -101,7 +109,7 @@ export default function AdminDoctors() {
     const isoDate = docDate.toISOString().split('T')[0];
     
     const email = (doctor.email || '').toLowerCase();
-    const displayName = (doctor.firstName || doctor.email?.split('@')[0] || '').toLowerCase();
+    const displayName = (doctor.name || doctor.firstName || doctor.email?.split('@')[0] || '').toLowerCase();
     const spec = (doctor.specialization || '').toLowerCase();
     
     return (
@@ -111,26 +119,26 @@ export default function AdminDoctors() {
   });
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 bg-[#090d16] text-slate-100 min-h-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Doctor management</h1>
-          <p className="text-sm text-zinc-400 font-medium">Verify, suspend, and manage all doctors</p>
+          <h1 className="text-xl font-semibold text-white tracking-tight">Doctor management</h1>
+          <p className="text-xs text-slate-400 mt-1">Verify credentials, manage active doctors, and monitor compliance</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <div className="relative">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search date, name, specialization..."
+              placeholder="Search doctor, license, specialty..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-[#1a1a1d] border border-zinc-700 text-zinc-200 text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-purple-500 w-full sm:w-64"
+              className="bg-[#090d16] border border-[#1f293d] text-white text-xs rounded-lg pl-8 pr-3.5 py-2 focus:outline-none focus:border-violet-500 w-full sm:w-64 placeholder:text-slate-500 transition-colors"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-zinc-700 bg-[#1a1a1d] hover:bg-zinc-800 text-sm font-semibold rounded-xl transition-all cursor-pointer active:scale-95 shrink-0">
-            <Download className="w-4 h-4" />
+          <button className="flex items-center gap-1.5 px-3 py-2 border border-[#1f293d] bg-[#111827] hover:bg-[#162032] text-xs font-medium text-slate-200 rounded-lg transition-colors cursor-pointer shrink-0">
+            <Download className="w-3.5 h-3.5 text-violet-400" />
             <span className="hidden sm:inline">Export</span>
           </button>
         </div>
@@ -138,130 +146,146 @@ export default function AdminDoctors() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Doctors */}
-        <div className="bg-[#1a1a1d] border border-zinc-800/50 rounded-2xl p-5 flex flex-col gap-4">
-          <div className="w-10 h-10 rounded-xl bg-purple-900/20 flex items-center justify-center text-purple-400">
-            <Stethoscope className="w-5 h-5" />
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col gap-3">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+            <Stethoscope className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-zinc-100">{totalCount}</div>
-            <div className="text-sm font-medium text-zinc-400 mt-1">Total doctors</div>
+            <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{totalCount}</div>
+            <div className="text-xs text-slate-400 mt-0.5">Total doctors</div>
           </div>
         </div>
-        {/* Verified */}
-        <div className="bg-[#1a1a1d] border border-zinc-800/50 rounded-2xl p-5 flex flex-col gap-4">
-          <div className="w-10 h-10 rounded-xl bg-green-900/20 flex items-center justify-center text-green-400">
-            <CheckCircle2 className="w-5 h-5" />
+
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <CheckCircle2 className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-zinc-100">{verifiedDoctors}</div>
-            <div className="text-sm font-medium text-zinc-400 mt-1">Verified</div>
+            <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{verifiedDoctors}</div>
+            <div className="text-xs text-slate-400 mt-0.5">Verified</div>
           </div>
         </div>
-        {/* Pending */}
-        <div className="bg-[#1a1a1d] border border-zinc-800/50 rounded-2xl p-5 flex flex-col gap-4">
-          <div className="w-10 h-10 rounded-xl bg-yellow-900/20 flex items-center justify-center text-yellow-500">
-            <Clock className="w-5 h-5" />
+
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <Clock className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-zinc-100">{pendingCount}</div>
-            <div className="text-sm font-medium text-zinc-400 mt-1">Pending</div>
+            <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{pendingCount}</div>
+            <div className="text-xs text-slate-400 mt-0.5">Pending</div>
           </div>
         </div>
-        {/* Suspended */}
-        <div className="bg-[#1a1a1d] border border-zinc-800/50 rounded-2xl p-5 flex flex-col gap-4">
-          <div className="w-10 h-10 rounded-xl bg-red-900/20 flex items-center justify-center text-red-500">
-            <Ban className="w-5 h-5" />
+
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col gap-3">
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+            <Ban className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-2xl font-bold text-zinc-100">{suspendedCount}</div>
-            <div className="text-sm font-medium text-zinc-400 mt-1">Suspended</div>
+            <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{suspendedCount}</div>
+            <div className="text-xs text-slate-400 mt-0.5">Suspended</div>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-[#1a1a1d] border border-zinc-800/50 rounded-2xl overflow-hidden">
-        <div className="p-5 border-b border-zinc-800/50 flex items-center gap-6">
-          <h2 className="text-lg font-bold text-zinc-100">All doctors</h2>
-          <div className="flex gap-4 text-sm font-medium">
-            <span className="text-green-400">Verified ({verifiedDoctors})</span>
-            <span className="text-yellow-500">Pending ({pendingCount})</span>
-            <span className="text-red-500">Suspended ({suspendedCount})</span>
+      <div className="bg-[#111827] border border-[#1f293d] rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-[#1f293d] flex items-center justify-between gap-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Registered practitioners
+          </h2>
+          <div className="flex gap-3 text-xs font-medium">
+            <span className="text-emerald-400">Verified ({verifiedDoctors})</span>
+            <span className="text-amber-400">Pending ({pendingCount})</span>
+            <span className="text-rose-400">Suspended ({suspendedCount})</span>
           </div>
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-400">
-            <thead className="text-xs uppercase bg-zinc-900/50 text-zinc-500 border-b border-zinc-800/50">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="text-[11px] bg-[#162032] text-slate-400 border-b border-[#1f293d]">
               <tr>
-                <th className="px-6 py-4 font-semibold tracking-wider">Doctor</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Specialization</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Patients</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Rating</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Fee</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
-                <th className="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
+                <th className="px-5 py-3 font-medium">Doctor</th>
+                <th className="px-5 py-3 font-medium">Specialization</th>
+                <th className="px-5 py-3 font-medium">Patients</th>
+                <th className="px-5 py-3 font-medium">Rating</th>
+                <th className="px-5 py-3 font-medium">Fee</th>
+                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-[#1f293d]">
               {filteredDoctors.map((doctor) => {
                 const isPending = !doctor.isVerified && !doctor.isSuspended;
                 const isVerified = doctor.isVerified && !doctor.isSuspended;
                 const isSuspended = doctor.isSuspended;
 
                 return (
-                  <tr key={doctor.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-900/40 text-purple-400 flex items-center justify-center shrink-0">
-                          <UserIcon className="w-4 h-4" />
+                  <tr key={doctor.id} className="hover:bg-[#162032]/50 transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center shrink-0">
+                          <UserIcon className="w-3.5 h-3.5" />
                         </div>
-                        <div className="font-semibold text-zinc-200 truncate max-w-[150px]">
-                          Dr. {doctor.firstName || doctor.email?.split('@')[0] || 'Unknown'}
+                        <div className="font-medium text-white truncate max-w-[150px]">
+                          {doctor.name ? doctor.name : (doctor.email || 'Doctor')}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-zinc-300">
+                    <td className="px-5 py-3 text-slate-300">
                       {doctor.specialization}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3 text-slate-400 tabular-nums">
                       {isVerified ? doctor.patientsCount || 0 : '—'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3">
                       {isVerified ? (
-                        <div className="flex items-center gap-1 text-yellow-500 font-medium">
+                        <div className="flex items-center gap-1 text-amber-400 tabular-nums">
                           {doctor.rating || '0.0'} <span className="text-[10px]">★</span>
                         </div>
                       ) : '—'}
                     </td>
-                    <td className="px-6 py-4 font-medium text-zinc-200">
+                    <td className="px-5 py-3 text-white tabular-nums">
                       ₹{doctor.consultationFee}
                     </td>
-                    <td className="px-6 py-4">
-                      {isVerified && <span className="text-green-400 font-medium bg-green-400/10 px-2 py-1 rounded-md text-xs">Verified</span>}
-                      {isPending && <span className="text-yellow-500 font-medium bg-yellow-500/10 px-2 py-1 rounded-md text-xs">Pending</span>}
-                      {isSuspended && <span className="text-red-500 font-medium bg-red-500/10 px-2 py-1 rounded-md text-xs">Suspended</span>}
+                    <td className="px-5 py-3">
+                      {isVerified && (
+                        <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          Verified
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          Pending
+                        </span>
+                      )}
+                      {isSuspended && (
+                        <span className="text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                          Suspended
+                        </span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3 text-xs font-semibold">
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2.5 text-xs font-medium">
                         {isVerified && (
-                          <button onClick={() => handleSuspend(doctor.id)} className="text-red-400 hover:text-red-300 transition-colors">
+                          <button onClick={() => handleSuspend(doctor.id)} className="text-rose-400 hover:text-rose-300 transition-colors cursor-pointer">
                             Suspend
                           </button>
                         )}
                         {isPending && (
-                          <button onClick={() => handleVerify(doctor.id)} className="text-green-400 hover:text-green-300 transition-colors">
+                          <button onClick={() => handleVerify(doctor.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer">
                             Verify
                           </button>
                         )}
                         {isSuspended && (
-                          <button onClick={() => handleReinstate(doctor.id)} className="text-purple-400 hover:text-purple-300 transition-colors">
+                          <button onClick={() => handleReinstate(doctor.id)} className="text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
                             Reinstate
                           </button>
                         )}
-                        <button className="text-zinc-500 hover:text-zinc-300">
-                          <MoreHorizontal className="w-4 h-4" />
+                        <button className="text-slate-500 hover:text-slate-300 cursor-pointer">
+                          <MoreHorizontal className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -270,8 +294,8 @@ export default function AdminDoctors() {
               })}
               {filteredDoctors.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
-                    No doctors found matching your search.
+                  <td colSpan={7} className="px-5 py-6 text-center text-slate-500">
+                    No doctors found matching your search
                   </td>
                 </tr>
               )}

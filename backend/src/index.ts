@@ -13,7 +13,17 @@ import { startReminderJob } from './jobs/reminderJob';
 import { startCleanupJob } from './jobs/cleanupJob';
 import { ensureDemoUsersExist } from './config/seedDemoUsers';
 
+import rateLimit from 'express-rate-limit';
+
 const app = express();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.use(helmet());
 app.use(cors({
@@ -26,7 +36,7 @@ app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.use('/api/auth',          authRouter);
+app.use('/api/auth',          authLimiter, authRouter);
 app.use('/api/doctors',       doctorsRouter);
 app.use('/api/slots',         slotsRouter);
 app.use('/api/appointments',  appointmentsRouter);
@@ -64,8 +74,21 @@ app.listen(Number(env.PORT), async () => {
       console.error('Migration error (User):', err);
     }
   }
+
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Doctor" ADD COLUMN IF NOT EXISTS "name" TEXT;`);
+    console.log('✅ Added name column to Doctor table');
+  } catch (err: any) {
+    if (err.message && err.message.includes('already exists')) {
+      // Ignore
+    } else if (err.code === '42701') {
+      // Ignore
+    } else {
+      console.error('Migration error (Doctor name):', err);
+    }
+  }
+
   ensureDemoUsersExist().catch((err) => console.error('Auto seed error:', err));
   startReminderJob();
   startCleanupJob();
 });
-// Nodemon trigger

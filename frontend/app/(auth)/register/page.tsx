@@ -1,22 +1,25 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import AppLogo from '@/components/AppLogo';
 import {
-  Heart,
   Mail,
   Lock,
   Phone,
   AlertCircle,
   Award,
-  FileText,
-  DollarSign,
-  Sparkles,
   ArrowRight,
   User,
-  Activity,
-  ArrowLeft
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Briefcase,
+  IndianRupee,
+  ShieldCheck,
+  Stethoscope,
 } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -30,8 +33,9 @@ export default function RegisterPage() {
     experienceYears: '',
     licenseNumber: '',
     consultationFee: '',
-    bio: ''
+    bio: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -44,7 +48,7 @@ export default function RegisterPage() {
         email: form.email,
         password: form.password,
         role: form.role,
-        phone: form.phone || undefined
+        phone: form.phone || undefined,
       };
       if (form.role === 'DOCTOR') {
         payload.specialization = form.specialization;
@@ -56,84 +60,98 @@ export default function RegisterPage() {
       await api.post('/auth/register', payload);
       router.push('/login');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed. Please review inputs.');
+      setError(err.response?.data?.error || 'Registration failed. Please review your details.');
     } finally {
       setLoading(false);
     }
   };
 
+  const isDoctor = form.role === 'DOCTOR';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-slate-50 to-accent-50/70 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900 flex items-center justify-center p-6 relative overflow-hidden transition-all duration-300">
-      {/* Top Left Back Button */}
-      <button
-        type="button"
-        onClick={() => router.push('/')}
-        className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border shadow-sm cursor-pointer border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-slate-950 dark:hover:text-white backdrop-blur-sm"
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-4 sm:p-6 relative select-none selection:bg-purple-900/40 selection:text-purple-200">
+      {/* Top Left Back Navigation */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 sm:top-8 sm:left-8 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#1f293d]/80 bg-[#111827]/85 backdrop-blur-md hover:bg-[#162032] text-slate-300 hover:text-white transition-colors"
       >
-        <ArrowLeft className="w-4 h-4 text-blue-500" />
-        <span>Back to home</span>
-      </button>
+        <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
+        <span>Home</span>
+      </Link>
 
-      {/* Decorative Blur Circles */}
-      <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-brand-350/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-accent-350/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-      <div className="w-full max-w-[450px]">
-        {/* Logo */}
+      <div className="w-full max-w-[460px] z-10 py-8">
+        {/* Logo Header */}
         <div className="text-center mb-6 flex flex-col items-center">
-          <AppLogo isDark={true} onClick={() => router.push('/')} className="mb-2" />
+          <AppLogo
+            isDark={true}
+            onClick={() => router.push('/')}
+            className="mb-2"
+            accentColor={isDoctor ? 'emerald' : 'blue'}
+          />
+          <p className="text-xs text-slate-400">
+            Create your account
+          </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-205 dark:border-zinc-800 shadow-2xl dark:shadow-none p-8 transition-all duration-300">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Create your account</h1>
-            <p className="text-slate-505 dark:text-zinc-400 text-xs font-medium mt-1">Join thousands managing their schedule and health smarter</p>
+        <div className="bg-[#111827]/85 backdrop-blur-md border border-[#1f293d]/80 rounded-xl p-6 sm:p-7 shadow-2xl">
+          <div className="mb-5">
+            <h1 className="text-lg font-semibold text-white tracking-tight">Get started with DOC4U</h1>
+            <p className="text-slate-400 text-xs mt-0.5">
+              {isDoctor
+                ? 'Join our verified medical network to manage appointments and clinical consultations'
+                : 'Book consultations, track medical records, and consult verified doctors online'}
+            </p>
           </div>
 
           {error && (
-            <div className="bg-rose-50 dark:bg-rose-955/20 border border-rose-200 dark:border-rose-900/30 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-rose-600 dark:text-rose-400 font-medium mb-5 animate-in fade-in slide-in-from-top-2 duration-200">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{error}</span>
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 flex items-start gap-2.5 text-xs text-rose-300 font-medium mb-4">
+              <AlertCircle className="w-4 h-4 mt-0.5 text-rose-400 shrink-0" />
+              <span className="leading-tight">{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             {/* Role switch tabs */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">I want to register as</label>
-              <div className="flex gap-2 p-1 bg-slate-100/80 dark:bg-zinc-950 rounded-xl border border-slate-200/50 dark:border-zinc-850">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Register as
+              </label>
+              <div className="flex gap-1 p-1 bg-[#090d16] rounded-lg border border-[#1f293d]">
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, role: 'PATIENT' })}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${form.role === 'PATIENT'
-                    ? 'bg-white dark:bg-zinc-900 text-slate-905 dark:text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-450 dark:hover:text-white hover:bg-white/40'
-                    }`}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    !isDoctor
+                      ? 'bg-sky-500 text-slate-950 font-medium'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <User className={`w-3.5 h-3.5 ${form.role === 'PATIENT' ? 'text-brand-600' : ''}`} />
+                  <User className="w-3.5 h-3.5" />
                   <span>Patient</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, role: 'DOCTOR' })}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${form.role === 'DOCTOR'
-                    ? 'bg-white dark:bg-zinc-900 text-slate-905 dark:text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-450 dark:hover:text-white hover:bg-white/40'
-                    }`}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    isDoctor
+                      ? 'bg-emerald-500 text-slate-950 font-medium'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <Activity className={`w-3.5 h-3.5 ${form.role === 'DOCTOR' ? 'text-accent-600' : ''}`} />
+                  <Stethoscope className="w-3.5 h-3.5" />
                   <span>Doctor</span>
                 </button>
               </div>
             </div>
 
-            {/* Email Field */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">Email Address</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Email address
+              </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                  <Mail className="w-4 h-4" />
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-3.5 h-3.5" />
                 </span>
                 <input
                   type="email"
@@ -141,94 +159,122 @@ export default function RegisterPage() {
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/80 dark:placeholder:text-zinc-650 text-slate-950 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                  className="w-full pl-9 pr-3.5 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-slate-500"
                 />
               </div>
             </div>
 
-            {/* Password Field */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">Password</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Password
+              </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                  <Lock className="w-4 h-4" />
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-3.5 h-3.5" />
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
-                  placeholder="Min 8 characters"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/80 dark:placeholder:text-zinc-655 text-slate-950 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                  placeholder="Minimum 8 characters"
+                  className="w-full pl-9 pr-9 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-slate-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 
-            {/* Phone Field */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">Phone Number (Optional)</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Phone number (optional)
+              </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                  <Phone className="w-4 h-4" />
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Phone className="w-3.5 h-3.5" />
                 </span>
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={e => setForm({ ...form, phone: e.target.value })}
                   placeholder="+91 98765 43210"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/80 dark:placeholder:text-zinc-655 text-slate-950 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                  className="w-full pl-9 pr-3.5 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-slate-500"
                 />
               </div>
             </div>
 
-            {/* Doctor Info Section */}
-            {form.role === 'DOCTOR' && (
-              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-800/80 animate-in fade-in slide-in-from-top-3 duration-250">
-                <div className="bg-brand-50/50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/30 rounded-xl p-3 flex items-start gap-2 text-xs text-brand-700 dark:text-brand-450 font-semibold leading-relaxed">
-                  <Sparkles className="w-4 h-4 text-brand-500 mt-0.5 flex-shrink-0" />
-                  <span>Licensed medical registration is required. Accounts go live upon admin credentials verification.</span>
+            {/* Doctor-Specific Professional Details */}
+            {isDoctor && (
+              <div className="pt-3 border-t border-[#1f293d] space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Medical credentials</span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">Medical Specialization</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Medical specialization
+                  </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                      <Activity className="w-4 h-4" />
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Briefcase className="w-3.5 h-3.5" />
                     </span>
                     <input
                       type="text"
                       required
                       value={form.specialization}
                       onChange={e => setForm({ ...form, specialization: e.target.value })}
-                      placeholder="e.g. Cardiology, Pediatrics"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/85 dark:placeholder:text-zinc-655 text-slate-950 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                      placeholder="e.g. Cardiologist, Dermatologist"
+                      className="w-full pl-9 pr-3.5 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    Medical license number
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Award className="w-3.5 h-3.5" />
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={form.licenseNumber}
+                      onChange={e => setForm({ ...form, licenseNumber: e.target.value })}
+                      placeholder="e.g. MCI-2023-8849"
+                      className="w-full pl-9 pr-3.5 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-emerald-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">License Number</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                        <Award className="w-4 h-4" />
-                      </span>
-                      <input
-                        type="text"
-                        required
-                        value={form.licenseNumber}
-                        onChange={e => setForm({ ...form, licenseNumber: e.target.value })}
-                        placeholder="MED-2026-###"
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/85 dark:placeholder:text-zinc-655 text-slate-955 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
-                      />
-                    </div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Experience (years)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.experienceYears}
+                      onChange={e => setForm({ ...form, experienceYears: e.target.value })}
+                      placeholder="e.g. 8"
+                      className="w-full px-3 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-emerald-500"
+                    />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">Session Fee (₹)</label>
+                    <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                      Fee (₹)
+                    </label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                        <DollarSign className="w-4 h-4" />
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <IndianRupee className="w-3.5 h-3.5" />
                       </span>
                       <input
                         type="number"
@@ -236,7 +282,7 @@ export default function RegisterPage() {
                         value={form.consultationFee}
                         onChange={e => setForm({ ...form, consultationFee: e.target.value })}
                         placeholder="e.g. 500"
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/85 dark:placeholder:text-zinc-655 text-slate-955 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                        className="w-full pl-9 pr-3.5 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-emerald-500"
                       />
                     </div>
                   </div>
@@ -247,27 +293,44 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-98 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:translate-y-0 disabled:shadow-none"
+              className={`w-full mt-3 py-2 px-4 font-medium rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
+                isDoctor
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                  : 'bg-sky-500 hover:bg-sky-400 text-slate-950'
+              }`}
             >
               {loading ? (
                 <span>Registering account...</span>
               ) : (
                 <>
-                  <span>Create Account</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Create {isDoctor ? 'doctor' : 'patient'} account</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-zinc-800/80 text-center">
-            <p className="text-xs font-medium text-slate-505 dark:text-zinc-450">
+          <div className="mt-4 pt-3 border-t border-[#1f293d] text-center">
+            <p className="text-xs text-slate-400">
               Already registered?{' '}
-              <a href="/login" className="text-brand-605 hover:text-brand-705 font-bold hover:underline">
+              <Link href="/login" className="text-sky-400 hover:text-sky-300 font-medium">
                 Sign in instead
-              </a>
+              </Link>
             </p>
           </div>
+        </div>
+
+        {/* Verification Footer Badges */}
+        <div className="flex justify-center items-center gap-4 mt-5 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Admin-verified practitioners
+          </span>
+          <span className="w-1 h-1 bg-slate-700 rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+            Secure patient records
+          </span>
         </div>
       </div>
     </div>

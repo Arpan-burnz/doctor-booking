@@ -9,7 +9,8 @@ import {
   Download,
   AlertTriangle,
   CheckCircle2,
-  User
+  User,
+  Loader2,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -23,7 +24,7 @@ export default function AdminDashboard() {
     newPatientsToday: 0,
     cancellationRate: '0.0',
     avgRating: '0.0',
-    revenueThisMonth: 0
+    revenueThisMonth: 0,
   });
   const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([
       api.get('/admin/stats'),
-      api.get('/admin/doctors')
+      api.get('/admin/doctors'),
     ]).then(([statsRes, docRes]) => {
       if (statsRes.data.success) {
         setStats(statsRes.data.data);
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
       setStats(prev => ({
         ...prev,
         pendingDoctors: prev.pendingDoctors - 1,
-        totalDoctors: prev.totalDoctors + 1
+        totalDoctors: prev.totalDoctors + 1,
       }));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Verification failed');
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
       setDoctors(prev => prev.filter(d => d.id !== id));
       setStats(prev => ({
         ...prev,
-        pendingDoctors: prev.pendingDoctors - 1
+        pendingDoctors: prev.pendingDoctors - 1,
       }));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Rejection failed');
@@ -74,7 +75,14 @@ export default function AdminDashboard() {
   const pending = doctors.filter(d => !d.isVerified);
 
   if (loading) {
-    return <div className="p-8 text-zinc-400">Loading dashboard...</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+          <p className="text-slate-400 text-xs">Loading admin portal</p>
+        </div>
+      </div>
+    );
   }
 
   // Helper to format time ago
@@ -86,160 +94,161 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 bg-[#090d16] text-slate-100 min-h-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Platform overview</h1>
-          <p className="text-sm text-zinc-400 font-medium">Live stats across the DOC4U platform</p>
+          <h1 className="text-xl font-semibold text-white tracking-tight">Platform overview</h1>
+          <p className="text-xs text-slate-400 mt-1">Live metrics across the consultation platform</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 border border-zinc-700 bg-[#1a1a1d] hover:bg-zinc-800 text-sm font-semibold rounded-xl transition-all cursor-pointer active:scale-95">
-          <Download className="w-4 h-4" />
+        <button className="flex items-center gap-2 px-3.5 py-2 border border-[#1f293d] bg-[#111827] hover:bg-[#162032] text-xs font-medium text-slate-200 rounded-lg transition-colors cursor-pointer">
+          <Download className="w-3.5 h-3.5 text-violet-400" />
           <span>Export report</span>
         </button>
       </div>
 
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#18181b] border border-zinc-800/80 rounded-2xl p-5">
-          <div className="w-8 h-8 rounded-lg bg-blue-900/30 flex items-center justify-center mb-4">
-            <Users className="w-4 h-4 text-blue-400" />
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-3 text-violet-400">
+            <Users className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-bold text-zinc-100">{stats.totalUsers.toLocaleString()}</div>
-          <div className="text-xs text-zinc-500 font-medium mt-1">Total patients</div>
+          <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{stats.totalUsers.toLocaleString()}</div>
+          <div className="text-xs text-slate-400 mt-0.5">Total patients</div>
         </div>
 
-        <div className="bg-[#18181b] border border-zinc-800/80 rounded-2xl p-5">
-          <div className="w-8 h-8 rounded-lg bg-purple-900/30 flex items-center justify-center mb-4">
-            <Stethoscope className="w-4 h-4 text-purple-400" />
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-3 text-violet-400">
+            <Stethoscope className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-bold text-zinc-100">{stats.totalDoctors.toLocaleString()}</div>
-          <div className="text-xs text-zinc-500 font-medium mt-1">Verified doctors</div>
+          <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{stats.totalDoctors.toLocaleString()}</div>
+          <div className="text-xs text-slate-400 mt-0.5">Verified doctors</div>
         </div>
 
-        <div className="bg-[#18181b] border border-zinc-800/80 rounded-2xl p-5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-900/30 flex items-center justify-center mb-4">
-            <Calendar className="w-4 h-4 text-emerald-500" />
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-3 text-violet-400">
+            <Calendar className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-bold text-zinc-100">{stats.appointmentsThisMonth.toLocaleString()}</div>
-          <div className="text-xs text-zinc-500 font-medium mt-1">Appointments this month</div>
+          <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{stats.appointmentsThisMonth.toLocaleString()}</div>
+          <div className="text-xs text-slate-400 mt-0.5">Appointments this month</div>
         </div>
 
-        <div className="bg-[#18181b] border border-zinc-800/80 rounded-2xl p-5">
-          <div className="w-8 h-8 rounded-lg bg-amber-900/30 flex items-center justify-center mb-4">
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-3 text-violet-400">
+            <Clock className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-bold text-zinc-100">{stats.pendingDoctors}</div>
-          <div className="text-xs text-zinc-500 font-medium mt-1">Pending verifications</div>
+          <div className="text-2xl font-semibold tabular-nums text-white tracking-tight">{stats.pendingDoctors}</div>
+          <div className="text-xs text-slate-400 mt-0.5">Pending verifications</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Column - Pending Verifications */}
-        <div className="lg:col-span-2 bg-[#18181b] border border-zinc-800/80 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-lg font-bold text-zinc-100">Pending doctor verifications</h2>
+        <div className="lg:col-span-2 bg-[#111827] border border-[#1f293d] rounded-xl p-5">
+          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-[#1f293d]">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Pending doctor verifications
+            </h2>
             {pending.length > 0 && (
-              <span className="text-xs font-bold text-amber-500 bg-amber-950/40 px-2.5 py-0.5 rounded-md">
+              <span className="text-[11px] font-medium text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
                 {pending.length} pending
               </span>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {pending.length > 0 ? pending.map(doc => (
-              <div key={doc.id} className="border border-zinc-800/80 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#1e1e22]/50 hover:bg-[#1e1e22] transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-amber-900/20 border border-amber-900/30 flex items-center justify-center text-amber-500 shrink-0">
-                    <User className="w-5 h-5" />
+              <div key={doc.id} className="border border-[#1f293d] rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 bg-[#162032]">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                    <User className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-zinc-100">
+                    <h3 className="text-xs font-semibold text-white">
                       Dr. {doc.user?.name || doc.fullName || doc.specialization}
                     </h3>
-                    <div className="text-[13px] text-zinc-400 font-medium mt-0.5">
-                      {doc.specialization} · {doc.licenseNumber} · Applied {timeAgo(doc.createdAt)}
+                    <div className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                      {doc.specialization} · {doc.licenseNumber} · {timeAgo(doc.createdAt)}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
                   <button 
                     onClick={() => handleVerify(doc.id)}
-                    className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-semibold text-sm rounded-lg transition-colors border border-emerald-900/30 cursor-pointer active:scale-95"
+                    className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-medium text-xs rounded-lg transition-colors cursor-pointer"
                   >
                     Verify
                   </button>
                   <button 
                     onClick={() => handleReject(doc.id)}
-                    className="px-4 py-2 bg-rose-500/5 hover:bg-rose-500/10 text-rose-400 font-semibold text-sm rounded-lg transition-colors border border-rose-900/20 cursor-pointer active:scale-95"
+                    className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-medium text-xs rounded-lg transition-colors border border-rose-500/20 cursor-pointer"
                   >
                     Reject
                   </button>
                 </div>
               </div>
             )) : (
-              <div className="text-center py-10 text-sm text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
-                No pending verifications.
+              <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-[#1f293d] rounded-lg bg-[#162032]/30">
+                No pending doctor verifications
               </div>
             )}
           </div>
         </div>
 
         {/* Right Column - Stats & Alerts */}
-        <div className="space-y-6">
-          <div className="bg-[#18181b] border border-zinc-800/80 rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-zinc-100 mb-6">Platform stats</h2>
+        <div className="space-y-5">
+          <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4 pb-3 border-b border-[#1f293d]">
+              Platform metrics
+            </h2>
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-                <span className="text-sm font-medium text-zinc-300">Today's appointments</span>
-                <span className="text-sm font-bold text-blue-400">{stats.todaysAppointments}</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-1">
+                <span className="text-xs text-slate-300">Today&apos;s appointments</span>
+                <span className="text-xs font-medium tabular-nums text-white">{stats.todaysAppointments}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-                <span className="text-sm font-medium text-zinc-300">New patients today</span>
-                <span className="text-sm font-bold text-zinc-100">{stats.newPatientsToday}</span>
+              <div className="flex justify-between items-center py-1 border-t border-[#1f293d] pt-2.5">
+                <span className="text-xs text-slate-300">New patients today</span>
+                <span className="text-xs font-medium tabular-nums text-white">{stats.newPatientsToday}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-                <span className="text-sm font-medium text-zinc-300">Cancellation rate</span>
-                <span className="text-sm font-bold text-amber-500">{stats.cancellationRate}%</span>
+              <div className="flex justify-between items-center py-1 border-t border-[#1f293d] pt-2.5">
+                <span className="text-xs text-slate-300">Cancellation rate</span>
+                <span className="text-xs font-medium tabular-nums text-amber-400">{stats.cancellationRate}%</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-                <span className="text-sm font-medium text-zinc-300">Avg rating</span>
-                <span className="text-sm font-bold text-emerald-500">{stats.avgRating} ★</span>
+              <div className="flex justify-between items-center py-1 border-t border-[#1f293d] pt-2.5">
+                <span className="text-xs text-slate-300">Average rating</span>
+                <span className="text-xs font-medium tabular-nums text-emerald-400">{stats.avgRating} ★</span>
               </div>
-              <div className="flex justify-between items-center py-2 pt-3">
-                <span className="text-sm font-medium text-zinc-300">Revenue this month</span>
-                <span className="text-sm font-bold text-zinc-100">₹{stats.revenueThisMonth.toLocaleString()}</span>
+              <div className="flex justify-between items-center py-1 border-t border-[#1f293d] pt-2.5">
+                <span className="text-xs text-slate-300">Revenue this month</span>
+                <span className="text-xs font-medium tabular-nums text-white">₹{stats.revenueThisMonth.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#18181b] border border-zinc-800/80 rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-zinc-100 mb-6">Recent alerts</h2>
+          <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4 pb-3 border-b border-[#1f293d]">
+              System alerts
+            </h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {stats.pendingDoctors > 0 && (
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  </div>
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <div className="text-sm font-bold text-zinc-100 flex items-center gap-2">
-                      {stats.pendingDoctors} doctors pending
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                    <div className="text-xs font-medium text-white flex items-center gap-2">
+                      {stats.pendingDoctors} doctor applications pending review
                     </div>
-                    <div className="text-xs text-zinc-500 font-medium mt-0.5">Needs review</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Verification required</div>
                   </div>
                 </div>
               )}
               
-              <div className="flex items-start gap-3 pt-3 border-t border-zinc-800/50">
-                <div className="mt-0.5">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                </div>
+              <div className={`flex items-start gap-2.5 ${stats.pendingDoctors > 0 ? 'pt-2.5 border-t border-[#1f293d]' : ''}`}>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-zinc-100">System healthy</div>
-                  <div className="text-xs text-zinc-500 font-medium mt-0.5">All services up</div>
+                  <div className="text-xs font-medium text-white">All clinical services operational</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">API and database active</div>
                 </div>
               </div>
             </div>

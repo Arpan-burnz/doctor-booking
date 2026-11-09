@@ -54,6 +54,7 @@ model RefreshToken {
 model Doctor {
   id              String   @id @default(uuid())
   userId          String   @unique
+  name            String?
   specialization  String
   licenseNumber   String   @unique
   consultationFee Int

@@ -25,48 +25,58 @@ export const registerUser = async (data: RegisterInput) => {
   if (existing) throw new Error('Email already registered');
 
   const passwordHash = await bcrypt.hash(data.password, env.BCRYPT_ROUNDS);
-  const user = await prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      passwordHash,
-      role: data.role,
-      phone: data.phone,
-    },
-  });
 
-  if (data.role === 'DOCTOR') {
-    if (!data.specialization || !data.licenseNumber || !data.consultationFee)
-      throw new Error('Doctor fields required');
-    await prisma.doctor.create({
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
       data: {
-        userId: user.id,
-        specialization: data.specialization,
-        licenseNumber: data.licenseNumber,
-        consultationFee: data.consultationFee,
+        email: normalizedEmail,
+        passwordHash,
+        role: data.role,
+        phone: data.phone,
       },
     });
-  } else {
-    await prisma.patient.create({ data: { userId: user.id } });
-  }
 
-  return { id: user.id, email: user.email, role: user.role };
+    if (data.role === 'DOCTOR') {
+      if (!data.specialization || !data.licenseNumber || !data.consultationFee)
+        throw new Error('Doctor fields required');
+      await tx.doctor.create({
+        data: {
+          userId: user.id,
+          specialization: data.specialization,
+          licenseNumber: data.licenseNumber,
+          consultationFee: data.consultationFee,
+        },
+      });
+    } else {
+      await tx.patient.create({ data: { userId: user.id } });
+    }
+
+    return { id: user.id, email: user.email, role: user.role };
+  });
 };
 
 export const loginUser = async (data: LoginInput) => {
   const normalizedEmail = data.email.toLowerCase().trim();
   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (!user) {
-    console.log(`❌ Login failed — No user account found for: "${normalizedEmail}"`);
     throw new Error('Invalid email or password');
   }
 
   const valid = await bcrypt.compare(data.password, user.passwordHash);
   if (!valid) {
-    console.log(`❌ Login failed — Password mismatch for user: "${normalizedEmail}"`);
     throw new Error('Invalid email or password');
   }
 
-  console.log(`✅ Login successful for: "${normalizedEmail}" (${user.role})`);
+  if ((user as any).isActive === false) {
+    throw new Error('Account is deactivated');
+  }
+
+  if (user.role === 'DOCTOR') {
+    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id } });
+    if (doctor && (doctor as any).isSuspended) {
+      throw new Error('Doctor account is currently suspended');
+    }
+  }
 
   const accessToken = signAccessToken(user.id, user.role);
   const refreshToken = await signRefreshToken(user.id);
@@ -85,6 +95,17 @@ export const refreshAccessToken = async (token: string) => {
 
   const user = await prisma.user.findUnique({ where: { id: existing.userId } });
   if (!user) throw new Error('User not found');
+
+  if ((user as any).isActive === false) {
+    throw new Error('Account is deactivated');
+  }
+
+  if (user.role === 'DOCTOR') {
+    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id } });
+    if (doctor && (doctor as any).isSuspended) {
+      throw new Error('Doctor account is currently suspended');
+    }
+  }
 
   await prisma.refreshToken.delete({ where: { token } });
 

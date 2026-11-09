@@ -29,8 +29,8 @@ export const getAppointmentById = async (req: Request, res: Response, next: Next
 
 export const cancelAppointment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.userId;
-    const appointment = await AppointmentService.cancelAppointment(req.params.id as string, userId);
+    const { userId, role } = (req as any).user;
+    const appointment = await AppointmentService.cancelAppointment(req.params.id as string, userId, role);
     res.json({ success: true, data: appointment });
   } catch (err) { next(err); }
 };

@@ -138,13 +138,15 @@ export const getMyAppointments = async (userId: string, role: string) => {
       include: {
         slot:    true,
         patient: { include: { user: { select: { email: true, phone: true } } } },
+        prescriptions: true,
+        review: true,
       },
       orderBy: { bookedAt: 'desc' },
     });
   }
 };
 
-export const getAppointmentById = async (appointmentId: string, userId: string, role: string) => {
+export const getAppointmentById = async (appointmentId: string, userId: string, role?: string) => {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
@@ -154,16 +156,33 @@ export const getAppointmentById = async (appointmentId: string, userId: string, 
     },
   });
   if (!appointment) throw new Error('Appointment not found');
+
+  if (role !== 'ADMIN') {
+    const isPatient = appointment.patient?.userId === userId;
+    const isDoctor = appointment.doctor?.userId === userId;
+    if (!isPatient && !isDoctor) {
+      throw new Error('Not authorized');
+    }
+  }
+
   return appointment;
 };
 
-export const cancelAppointment = async (appointmentId: string, userId: string) => {
+export const cancelAppointment = async (appointmentId: string, userId: string, role?: string) => {
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: { patient: true, doctor: true },
   });
   if (!appointment) throw new Error('Appointment not found');
   if (appointment.status === 'CANCELLED') throw new Error('Already cancelled');
+
+  if (role !== 'ADMIN') {
+    const isPatient = appointment.patient?.userId === userId;
+    const isDoctor = appointment.doctor?.userId === userId;
+    if (!isPatient && !isDoctor) {
+      throw new Error('Not authorized');
+    }
+  }
 
   const [, updated] = await prisma.$transaction([
     prisma.availabilitySlot.update({

@@ -31,9 +31,9 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <div className="w-64 h-screen bg-[#131315] border-r border-zinc-800/80 flex flex-col flex-shrink-0 sticky top-0 font-sans">
-      <div className="px-6 py-6 border-b border-zinc-800/50 mb-2">
-        <AppLogo isDark={true} onClick={() => router.push('/admin/dashboard')} />
+    <div className="w-64 h-screen bg-[#111827]/90 backdrop-blur-md border-r border-[#1f293d] flex flex-col flex-shrink-0 sticky top-0 font-sans select-none">
+      <div className="px-6 py-6 border-b border-[#1f293d]/70 mb-2">
+        <AppLogo isDark={true} onClick={() => router.push('/admin/dashboard')} accentColor="purple" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
@@ -44,10 +44,10 @@ export default function AdminSidebar() {
               <button
                 key={link.label}
                 onClick={() => router.push(link.href)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-purple-900/40 text-purple-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/25 shadow-sm shadow-purple-500/10'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
                 {link.icon}
@@ -58,7 +58,7 @@ export default function AdminSidebar() {
         </div>
 
         <div>
-          <h4 className="px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Reports</h4>
+          <h4 className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400/90 mb-2">Reports</h4>
           <div className="space-y-1">
             {reports.map((link) => {
               const isActive = pathname === link.href;
@@ -66,10 +66,10 @@ export default function AdminSidebar() {
                 <button
                   key={link.label}
                   onClick={() => router.push(link.href)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-purple-900/40 text-purple-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                      ? 'bg-purple-500/10 text-purple-400 border border-purple-500/25 shadow-sm shadow-purple-500/10'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.04] border border-transparent'
                   }`}
                 >
                   {link.icon}
@@ -81,15 +81,15 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      <div className="p-4 border-t border-zinc-800/50">
-        <div className="flex items-center justify-between bg-zinc-900 rounded-xl p-3 border border-zinc-800">
+      <div className="p-4 border-t border-[#1f293d]/70">
+        <div className="flex items-center justify-between bg-[#162032] rounded-xl p-3 border border-[#1f293d]">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-lg bg-indigo-900/60 flex items-center justify-center text-indigo-400 font-bold text-xs shrink-0 shadow-inner">
+            <div className="w-9 h-9 rounded-lg bg-purple-950/80 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-xs shrink-0 shadow-inner">
               AD
             </div>
             <div className="truncate text-left">
-              <div className="text-sm font-bold text-zinc-100 truncate">Super admin</div>
-              <div className="text-[11px] font-medium text-zinc-500 truncate">admin@doc4u.com</div>
+              <div className="text-xs font-bold text-slate-100 truncate">Super admin</div>
+              <div className="text-[11px] font-medium text-slate-400 truncate">admin@doc4u.com</div>
             </div>
           </div>
           <button
@@ -97,7 +97,7 @@ export default function AdminSidebar() {
               clearTokens();
               router.push('/login');
             }}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors shrink-0"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-950/30 text-slate-400 hover:text-rose-400 transition-colors shrink-0 cursor-pointer"
             title="Sign out"
           >
             <LogOut className="w-4 h-4" />

@@ -1,15 +1,29 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { saveTokens, getUserRole } from '@/lib/auth';
-import { Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, ArrowLeft, User, Stethoscope } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+  ArrowLeft,
+  User,
+  Stethoscope,
+} from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 
 export default function LoginPage() {
   const router = useRouter();
   const [loginRole, setLoginRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
   const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,47 +46,66 @@ export default function LoginPage() {
     }
   };
 
+  const fillDemo = (role: 'PATIENT' | 'DOCTOR' | 'ADMIN') => {
+    if (role === 'ADMIN') {
+      setForm({ email: 'admin@doc4u.com', password: 'Admin@123' });
+      setError('');
+    } else if (role === 'DOCTOR') {
+      setLoginRole('DOCTOR');
+      setForm({ email: 'doctor@doc4u.com', password: 'Password123!' });
+      setError('');
+    } else {
+      setLoginRole('PATIENT');
+      setForm({ email: 'patient@doc4u.com', password: 'Password123!' });
+      setError('');
+    }
+  };
+
+  const isDoctor = loginRole === 'DOCTOR';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-slate-50 to-accent-50/70 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900 flex items-center justify-center p-6 relative overflow-hidden transition-all duration-300">
-      {/* Top Left Back Button */}
-      <button
-        type="button"
-        onClick={() => router.push('/')}
-        className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border shadow-sm cursor-pointer border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-slate-950 dark:hover:text-white backdrop-blur-sm"
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-4 sm:p-6 relative select-none selection:bg-purple-900/40 selection:text-purple-200">
+      {/* Top Left Back Navigation */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 sm:top-8 sm:left-8 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#1f293d]/80 bg-[#111827]/85 backdrop-blur-md hover:bg-[#162032] text-slate-300 hover:text-white transition-colors"
       >
-        <ArrowLeft className="w-4 h-4 text-blue-500" />
-        <span>Back to home</span>
-      </button>
+        <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
+        <span>Home</span>
+      </Link>
 
-      {/* Decorative Blur Circles */}
-      <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-brand-350/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-accent-350/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-      <div className="w-full max-w-[430px]">
-        {/* Logo and Headings */}
-        <div className="text-center mb-8 flex flex-col items-center">
-          <AppLogo isDark={true} onClick={() => router.push('/')} className="mb-2.5" />
-          <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400 tracking-wide uppercase">Your Health, Your Schedule</p>
+      <div className="w-full max-w-[420px] z-10">
+        {/* Brand Header */}
+        <div className="text-center mb-6 flex flex-col items-center">
+          <AppLogo
+            isDark={true}
+            onClick={() => router.push('/')}
+            className="mb-2"
+            accentColor={isDoctor ? 'emerald' : 'blue'}
+          />
+          <p className="text-xs text-slate-400">
+            Clinical precision and verified healthcare
+          </p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-205 dark:border-zinc-800 shadow-2xl dark:shadow-none p-8 transition-all duration-300">
-          {/* Role Selection Tabs */}
-          <div className="flex gap-2 p-1 bg-slate-100 dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 mb-6">
+        {/* Login Card */}
+        <div className="bg-[#111827]/85 backdrop-blur-md border border-[#1f293d]/80 rounded-xl p-6 sm:p-7 shadow-2xl">
+          {/* Role Segmented Selector */}
+          <div className="flex gap-1 p-1 bg-[#090d16] rounded-lg border border-[#1f293d] mb-5">
             <button
               type="button"
               onClick={() => {
                 setLoginRole('PATIENT');
                 setError('');
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 loginRole === 'PATIENT'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-sky-500 text-slate-950 font-medium'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              <User className="w-4 h-4" />
-              <span>Patient Login</span>
+              <User className="w-3.5 h-3.5" />
+              <span>Patient portal</span>
             </button>
 
             <button
@@ -81,43 +114,43 @@ export default function LoginPage() {
                 setLoginRole('DOCTOR');
                 setError('');
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 loginRole === 'DOCTOR'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-emerald-500 text-slate-950 font-medium'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Stethoscope className="w-4 h-4" />
-              <span>Doctor Login</span>
+              <Stethoscope className="w-3.5 h-3.5" />
+              <span>Doctor portal</span>
             </button>
           </div>
 
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {loginRole === 'PATIENT' ? 'Patient Portal Sign In' : 'Doctor Portal Sign In'}
+          <div className="mb-5">
+            <h1 className="text-lg font-semibold text-white tracking-tight">
+              {loginRole === 'PATIENT' ? 'Patient sign in' : 'Doctor sign in'}
             </h1>
-            <p className="text-slate-500 dark:text-zinc-400 text-xs font-medium mt-1">
+            <p className="text-slate-400 text-xs mt-0.5">
               {loginRole === 'PATIENT'
-                ? 'Sign in to access your bookings, prescriptions, and health vitals'
-                : 'Sign in to manage your practice schedule, patient slots, and prescriptions'}
+                ? 'Sign in to access your consultations, prescriptions, and records'
+                : 'Sign in to manage practice availability, patients, and clinical slots'}
             </p>
           </div>
 
           {error && (
-            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/30 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-rose-600 dark:text-rose-400 font-medium mb-5 animate-in fade-in slide-in-from-top-2 duration-200">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{error}</span>
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 flex items-start gap-2.5 text-xs text-rose-300 font-medium mb-4">
+              <AlertCircle className="w-4 h-4 mt-0.5 text-rose-400 shrink-0" />
+              <span className="leading-tight">{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
-                {loginRole === 'PATIENT' ? 'Patient Email' : 'Doctor Email'}
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                {loginRole === 'PATIENT' ? 'Patient email' : 'Doctor email'}
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                  <Mail className="w-4 h-4" />
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-3.5 h-3.5" />
                 </span>
                 <input
                   type="email"
@@ -125,66 +158,109 @@ export default function LoginPage() {
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder={loginRole === 'PATIENT' ? 'patient@doc4u.com' : 'doctor@doc4u.com'}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/80 dark:placeholder:text-zinc-650 text-slate-950 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                  className="w-full pl-9 pr-3.5 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-slate-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Password</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Password
+              </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
-                  <Lock className="w-4 h-4" />
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-3.5 h-3.5" />
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-brand-500 focus:bg-white dark:focus:bg-zinc-950 rounded-xl text-sm font-medium outline-none transition-all placeholder:text-slate-400/80 dark:placeholder:text-zinc-650 text-slate-955 dark:text-zinc-100 focus:ring-4 focus:ring-brand-500/10"
+                  className="w-full pl-9 pr-9 py-2 bg-[#090d16] border border-[#1f293d] rounded-lg text-xs text-white placeholder:text-slate-500 outline-none transition-colors focus:border-slate-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-98 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:translate-y-0 disabled:shadow-none"
+              className={`w-full mt-2 py-2 px-4 font-medium rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
+                isDoctor
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                  : 'bg-sky-500 hover:bg-sky-400 text-slate-950'
+              }`}
             >
               {loading ? (
-                <span>Signing in...</span>
+                <span>Authenticating...</span>
               ) : (
                 <>
-                  <span>Sign in as {loginRole === 'PATIENT' ? 'Patient' : 'Doctor'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Sign in as {loginRole === 'PATIENT' ? 'patient' : 'doctor'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
             </button>
           </form>
 
+          {/* Quick Demo Credentials */}
+          <div className="mt-5 pt-4 border-t border-[#1f293d]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-medium text-slate-400">
+                Quick demo fill
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => fillDemo('PATIENT')}
+                className="py-1 px-2 rounded-md bg-[#162032] hover:bg-[#1a263c] border border-[#1f293d] text-[11px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+              >
+                Patient
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemo('DOCTOR')}
+                className="py-1 px-2 rounded-md bg-[#162032] hover:bg-[#1a263c] border border-[#1f293d] text-[11px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+              >
+                Doctor
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemo('ADMIN')}
+                className="py-1 px-2 rounded-md bg-[#162032] hover:bg-[#1a263c] border border-[#1f293d] text-[11px] font-medium text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
+              >
+                Admin
+              </button>
+            </div>
+          </div>
 
-
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-zinc-800/80 text-center">
-            <p className="text-xs font-medium text-slate-505 dark:text-zinc-450">
+          <div className="mt-4 pt-3 border-t border-[#1f293d] text-center">
+            <p className="text-xs text-slate-400">
               New to DOC4U?{' '}
-              <a href="/register" className="text-brand-605 hover:text-brand-705 font-bold hover:underline">
-                Create a free account
-              </a>
+              <Link href="/register" className="text-sky-400 hover:text-sky-300 font-medium">
+                Create an account
+              </Link>
             </p>
           </div>
         </div>
 
-        {/* Verification badges */}
-        <div className="flex justify-center items-center gap-5 mt-6 text-[11px] font-semibold text-slate-500 dark:text-zinc-450">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-accent-600" />
-            500+ Verified Doctors
+        {/* Verification Footer Badges */}
+        <div className="flex justify-center items-center gap-4 mt-5 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Verified medical specialists
           </span>
-          <span className="w-1 h-1 bg-slate-350 dark:bg-zinc-800 rounded-full" />
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-accent-600" />
-            10k+ Patient Bookings
+          <span className="w-1 h-1 bg-slate-700 rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+            HIPAA-compliant security
           </span>
         </div>
       </div>

@@ -27,3 +27,16 @@ export const deleteSlot = async (req: Request, res: Response, next: NextFunction
     res.json({ success: true, message: 'Slot deleted' });
   } catch (err) { next(err); }
 };
+
+export const blockDate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { date, reason } = req.body;
+    if (!date) {
+      res.status(400).json({ success: false, error: 'Date is required' });
+      return;
+    }
+    const result = await SlotService.blockDate(userId, date, reason);
+    res.json(result);
+  } catch (err) { next(err); }
+};

@@ -12,7 +12,10 @@ import {
   Check,
   X,
   FileCheck,
-  Bell
+  Bell,
+  Calendar,
+  Pill,
+  FileText,
 } from 'lucide-react';
 
 interface NotificationItem {
@@ -127,11 +130,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div
-      className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 ${
-        isDark ? 'bg-[#0c0d0e] text-zinc-100' : 'bg-slate-50 text-slate-800'
-      }`}
-    >
+    <div className="min-h-screen flex font-sans select-none antialiased bg-transparent text-slate-100 selection:bg-purple-900/40 selection:text-purple-200">
       {/* Sidebar Navigation */}
       {/* Shared Sidebar */}
       <PatientSidebar />
@@ -141,8 +140,8 @@ export default function NotificationsPage() {
         {/* Top Header Row */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Notifications</h1>
-            <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Notifications</h1>
+            <p className="text-xs font-medium mt-1 text-slate-400">
               Stay updated on appointments and health
             </p>
           </div>
@@ -150,11 +149,7 @@ export default function NotificationsPage() {
           {notifications.length > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer active:scale-95 ${
-                isDark
-                  ? 'bg-[#16171b] border-zinc-700/80 text-white hover:bg-zinc-800 hover:border-zinc-600'
-                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
-              }`}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#1f293d] bg-[#162032] hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm"
             >
               <span>Mark all read</span>
             </button>
@@ -164,16 +159,12 @@ export default function NotificationsPage() {
         {/* Notifications Grid Stack */}
         <div className="space-y-6 max-w-4xl">
           {notifications.length === 0 ? (
-            <div
-              className={`rounded-3xl p-12 border text-center flex flex-col items-center justify-center transition-all ${
-                isDark ? 'bg-[#16171b] border-zinc-800/80' : 'bg-white border-slate-200 shadow-sm'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 ${isDark ? 'bg-zinc-800/80 text-zinc-400' : 'bg-slate-100 text-slate-400'}`}>
-                <Bell className="w-6 h-6" />
+            <div className="rounded-3xl p-12 border border-[#1f293d] bg-[#111827] shadow-xl shadow-black/40 text-center flex flex-col items-center justify-center transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#162032] border border-[#1f293d] text-slate-400 flex items-center justify-center mb-3">
+                <Bell className="w-6 h-6 text-sky-400" />
               </div>
-              <h3 className={`text-base font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>No notifications yet</h3>
-              <p className={`text-xs max-w-sm ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+              <h3 className="text-base font-bold mb-1 text-white">No notifications yet</h3>
+              <p className="text-xs max-w-sm text-slate-400">
                 Updates about your upcoming appointments, prescriptions, and health reminders will appear here.
               </p>
             </div>
@@ -181,29 +172,25 @@ export default function NotificationsPage() {
             <>
               {/* Card 1: Today */}
               {todayNotifications.length > 0 && (
-                <div
-                  className={`rounded-3xl p-6 border transition-all ${
-                    isDark ? 'bg-[#16171b] border-zinc-800/80' : 'bg-white border-slate-200 shadow-sm'
-                  }`}
-                >
+                <div className="rounded-3xl p-6 border border-[#1f293d] bg-[#111827] shadow-xl shadow-black/40 transition-all">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Today</h3>
+                    <h3 className="text-base font-bold text-white">Today</h3>
                     {newCount > 0 && (
-                      <span className="text-xs font-bold bg-blue-600 text-white px-2.5 py-0.5 rounded-full shadow-sm">
+                      <span className="text-[11px] font-medium bg-sky-500/10 border border-sky-500/20 text-sky-400 px-2 py-0.5 rounded-md">
                         {newCount} new
                       </span>
                     )}
                   </div>
 
-                  <div className={`divide-y ${isDark ? 'divide-zinc-800/60' : 'divide-slate-100'}`}>
+                  <div className="divide-y divide-[#1f293d]">
                     {todayNotifications.map((notif) => (
                       <div
                         key={notif.id}
                         onClick={() => handleMarkAsRead(notif.id)}
                         className={`flex items-start gap-4 py-4 cursor-pointer group transition-colors rounded-xl px-3 -mx-3 ${
                           notif.isUnread
-                            ? isDark ? 'bg-blue-950/20 hover:bg-blue-900/30' : 'bg-blue-50/60 hover:bg-blue-50'
-                            : isDark ? 'hover:bg-zinc-800/30' : 'hover:bg-slate-50'
+                            ? 'bg-sky-500/10 hover:bg-sky-500/15'
+                            : 'hover:bg-[#162032]/60'
                         }`}
                       >
                         {renderIcon(notif.type)}
@@ -213,17 +200,17 @@ export default function NotificationsPage() {
                             <div className="flex items-center gap-2.5">
                               {notif.isUnread && (
                                 <span
-                                  className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-blue-500/20 shrink-0 inline-block"
+                                  className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20 shrink-0 inline-block"
                                   title="Unread notification"
                                 />
                               )}
-                              <h4 className={`text-sm font-bold ${notif.isUnread ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-zinc-300' : 'text-slate-700')}`}>
+                              <h4 className={`text-sm font-bold ${notif.isUnread ? 'text-white' : 'text-slate-300'}`}>
                                 {notif.title}
                               </h4>
                             </div>
-                            <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{notif.time}</span>
+                            <span className="text-xs text-slate-500">{notif.time}</span>
                           </div>
-                          <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>
+                          <p className="text-xs mt-1 leading-relaxed text-slate-300">
                             {notif.description}
                           </p>
                         </div>
@@ -235,22 +222,18 @@ export default function NotificationsPage() {
 
               {/* Card 2: Earlier */}
               {earlierNotifications.length > 0 && (
-                <div
-                  className={`rounded-3xl p-6 border transition-all ${
-                    isDark ? 'bg-[#16171b] border-zinc-800/80' : 'bg-white border-slate-200 shadow-sm'
-                  }`}
-                >
-                  <h3 className={`text-base font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>Earlier</h3>
+                <div className="rounded-3xl p-6 border border-[#1f293d] bg-[#111827] shadow-xl shadow-black/40 transition-all">
+                  <h3 className="text-base font-bold mb-6 text-white">Earlier</h3>
 
-                  <div className={`divide-y ${isDark ? 'divide-zinc-800/60' : 'divide-slate-100'}`}>
+                  <div className="divide-y divide-[#1f293d]">
                     {earlierNotifications.map(notif => (
                       <div
                         key={notif.id}
                         onClick={() => handleMarkAsRead(notif.id)}
                         className={`flex items-start gap-4 py-4 cursor-pointer group transition-colors rounded-xl px-3 -mx-3 ${
                           notif.isUnread
-                            ? isDark ? 'bg-blue-950/20 hover:bg-blue-900/30' : 'bg-blue-50/60 hover:bg-blue-50'
-                            : isDark ? 'hover:bg-zinc-800/30' : 'hover:bg-slate-50'
+                            ? 'bg-sky-500/10 hover:bg-sky-500/15'
+                            : 'hover:bg-[#162032]/60'
                         }`}
                       >
                         {renderIcon(notif.type)}
@@ -260,17 +243,17 @@ export default function NotificationsPage() {
                             <div className="flex items-center gap-2.5">
                               {notif.isUnread && (
                                 <span
-                                  className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-blue-500/20 shrink-0 inline-block"
+                                  className="w-2.5 h-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20 shrink-0 inline-block"
                                   title="Unread notification"
                                 />
                               )}
-                              <h4 className={`text-sm font-bold ${notif.isUnread ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-zinc-300' : 'text-slate-700')}`}>
+                              <h4 className={`text-sm font-bold ${notif.isUnread ? 'text-white' : 'text-slate-300'}`}>
                                 {notif.title}
                               </h4>
                             </div>
-                            <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{notif.time}</span>
+                            <span className="text-xs text-slate-500">{notif.time}</span>
                           </div>
-                          <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>
+                          <p className="text-xs mt-1 leading-relaxed text-slate-300">
                             {notif.description}
                           </p>
                         </div>

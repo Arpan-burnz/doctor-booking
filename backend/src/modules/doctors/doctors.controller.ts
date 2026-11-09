@@ -39,6 +39,14 @@ export const getMyProfile = async (req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 };
 
+export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.userId;
+    const stats = await DoctorService.getDoctorDashboardStats(userId);
+    res.json({ success: true, data: stats });
+  } catch (err) { next(err); }
+};
+
 export const updateMyProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user.userId;

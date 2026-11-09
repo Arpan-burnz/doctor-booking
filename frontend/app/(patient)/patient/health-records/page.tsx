@@ -200,8 +200,8 @@ export default function HealthRecordsPage() {
   };
 
   return (
-    <div className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 ${
-      isDark ? 'bg-[#0c0d0e] text-zinc-100' : 'bg-slate-50 text-slate-800'
+    <div className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 selection:bg-purple-900/40 selection:text-purple-200 ${
+      isDark ? 'bg-transparent text-zinc-100' : 'bg-slate-50 text-slate-800'
     }`}>
       {/* Shared Sidebar */}
       <PatientSidebar />

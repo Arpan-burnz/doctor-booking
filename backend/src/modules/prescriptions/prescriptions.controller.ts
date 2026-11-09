@@ -15,6 +15,25 @@ export const uploadPrescription = async (req: Request, res: Response, next: Next
       return;
     }
 
+    const userId = (req as any).user.userId;
+    const doctor = await prisma.doctor.findUnique({ where: { userId } });
+    if (!doctor) {
+      res.status(404).json({ error: 'Doctor profile not found' });
+      return;
+    }
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+    if (!appointment) {
+      res.status(404).json({ error: 'Appointment not found' });
+      return;
+    }
+    if (appointment.doctorId !== doctor.id) {
+      res.status(403).json({ error: 'Not authorized to upload prescription for this appointment' });
+      return;
+    }
+
     const fileUrl = await uploadFile(req.file, 'prescriptions');
 
     const prescription = await prisma.prescription.create({
@@ -27,8 +46,33 @@ export const uploadPrescription = async (req: Request, res: Response, next: Next
 
 export const getPrescriptions = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const appointmentId = req.params.appointmentId as string;
+    const user = (req as any).user;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        patient: true,
+        doctor: true,
+      },
+    });
+    if (!appointment) {
+      res.status(404).json({ error: 'Appointment not found' });
+      return;
+    }
+
+    if (user.role !== 'ADMIN') {
+      const isPatient = appointment.patient?.userId === user.userId;
+      const isDoctor = appointment.doctor?.userId === user.userId;
+      if (!isPatient && !isDoctor) {
+        res.status(403).json({ error: 'Not authorized to view prescriptions for this appointment' });
+        return;
+      }
+    }
+
     const prescriptions = await prisma.prescription.findMany({
-      where: { appointmentId: req.params.appointmentId as string },
+      where: { appointmentId },
+      orderBy: { issuedAt: 'desc' },
     });
     res.json({ success: true, data: prescriptions });
   } catch (err) { next(err); }

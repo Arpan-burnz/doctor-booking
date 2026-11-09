@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { getUserRole, getUsername } from '@/lib/auth';
+import { getUserRole, getUsername, clearTokens } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import PatientSidebar from '@/components/shared/PatientSidebar';
 import {
@@ -204,8 +204,8 @@ export default function SettingsPage() {
 
   return (
     <div
-      className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 ${
-        isDark ? 'bg-[#0c0d0e] text-zinc-100' : 'bg-slate-50 text-slate-800'
+      className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 selection:bg-purple-900/40 selection:text-purple-200 ${
+        isDark ? 'bg-transparent text-slate-100' : 'bg-slate-50 text-slate-800'
       }`}
     >
       {/* Sidebar Navigation */}
@@ -217,13 +217,13 @@ export default function SettingsPage() {
         {/* Top Header Row */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Settings</h1>
-            <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+            <h1 className={`text-xl font-semibold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Settings</h1>
+            <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Manage your account and preferences
             </p>
           </div>
           {saveMessage && (
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-3.5 py-1.5 rounded-xl animate-in fade-in">
+            <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg animate-in fade-in">
               {saveMessage}
             </span>
           )}
@@ -233,39 +233,39 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
           {/* Left Column: Profile Card */}
           <div
-            className={`lg:col-span-6 rounded-3xl p-6 border flex flex-col justify-between transition-all ${
-              isDark ? 'bg-[#16171b] border-zinc-800/80' : 'bg-white border-slate-200 shadow-sm'
+            className={`lg:col-span-6 rounded-xl p-6 border flex flex-col justify-between transition-colors ${
+              isDark ? 'bg-[#111827] border-[#1f293d]' : 'bg-white border-slate-200'
             }`}
           >
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Profile</h3>
+              <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#1f293d]">
+                <h3 className={`text-sm font-semibold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Profile</h3>
                 <button
                   type="button"
                   onClick={() => handleSaveProfile()}
-                  className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                  className="text-xs font-medium text-sky-400 hover:text-sky-300 transition-colors cursor-pointer"
                 >
                   Save changes
                 </button>
               </div>
 
               {/* Avatar + Basic details */}
-              <div className="flex items-center justify-between mb-8 pb-6 border-b border-zinc-800/60">
+              <div className="flex items-center justify-between mb-8 pb-6 border-b border-[#1f293d]">
                 <div className="flex items-center gap-3.5">
                   {profile.avatarUrl ? (
                     <img
                       src={profile.avatarUrl}
                       alt={profile.fullName}
-                      className="w-12 h-12 rounded-full object-cover shadow-md shrink-0 border-2 border-blue-500/40"
+                      className="w-12 h-12 rounded-xl object-cover shrink-0 border border-sky-500/40"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-md shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 text-sm font-semibold shrink-0">
                       {profile.fullName ? profile.fullName.substring(0, 2).toUpperCase() : 'AP'}
                     </div>
                   )}
                   <div>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.fullName}</h4>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>{profile.email}</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{profile.email}</p>
                   </div>
                 </div>
 
@@ -274,7 +274,7 @@ export default function SettingsPage() {
                   onClick={handleOpenPhotoModal}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 ${
                     isDark
-                      ? 'bg-zinc-800/90 border-zinc-700/80 text-white hover:bg-zinc-700'
+                      ? 'bg-[#162032] border-[#1f293d] text-white hover:bg-slate-800'
                       : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -286,48 +286,48 @@ export default function SettingsPage() {
               {/* Input Form */}
               <form onSubmit={handleSaveProfile} className="space-y-5">
                 <div>
-                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     Full name
                   </label>
                   <input
                     type="text"
                     value={profile.fullName}
                     onChange={e => setProfile({ ...profile, fullName: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl border text-sm font-bold outline-none transition-all ${
+                    className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold outline-none transition-all ${
                       isDark
-                        ? 'bg-zinc-900/90 border-zinc-700/80 text-white focus:border-blue-500'
+                        ? 'bg-[#0d121f] border-[#1f293d] text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20'
                         : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-blue-500'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     Phone
                   </label>
                   <input
                     type="text"
                     value={profile.phone}
                     onChange={e => setProfile({ ...profile, phone: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl border text-sm font-bold outline-none transition-all ${
+                    className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold outline-none transition-all ${
                       isDark
-                        ? 'bg-zinc-900/90 border-zinc-700/80 text-white focus:border-blue-500'
+                        ? 'bg-[#0d121f] border-[#1f293d] text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20'
                         : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-blue-500'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+                  <label className={`block text-xs font-semibold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                     Email
                   </label>
                   <input
                     type="email"
                     value={profile.email}
                     onChange={e => setProfile({ ...profile, email: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-xl border text-sm font-bold outline-none transition-all ${
+                    className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold outline-none transition-all ${
                       isDark
-                        ? 'bg-zinc-900/90 border-zinc-700/80 text-white focus:border-blue-500'
+                        ? 'bg-[#0d121f] border-[#1f293d] text-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20'
                         : 'bg-slate-50 border-slate-300 text-slate-900 focus:border-blue-500'
                     }`}
                   />
@@ -340,31 +340,31 @@ export default function SettingsPage() {
           <div className="lg:col-span-6 space-y-6">
             {/* Card 1: Notifications Preferences */}
             <div
-              className={`rounded-3xl p-6 border transition-all ${
-                isDark ? 'bg-[#16171b] border-zinc-800/80' : 'bg-white border-slate-200 shadow-sm'
+              className={`rounded-3xl p-6 border transition-all shadow-xl shadow-black/40 ${
+                isDark ? 'bg-[#111827] border-[#1f293d]' : 'bg-white border-slate-200 shadow-sm'
               }`}
             >
-              <h3 className={`text-base font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-900'}`}>Notifications</h3>
+              <h3 className={`text-sm font-bold mb-5 pb-3 border-b border-[#1f293d] ${isDark ? 'text-white' : 'text-slate-900'}`}>Notifications</h3>
 
               <div className="space-y-4">
                 {/* Email Reminders */}
                 <div className="flex items-center justify-between py-1.5">
                   <div>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Email reminders</h4>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>24hr before appointments</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>24hr before appointments</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleNotifPref('emailReminders')}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      notifPrefs.emailReminders ? 'bg-zinc-200' : isDark ? 'bg-zinc-800' : 'bg-slate-300'
+                      notifPrefs.emailReminders ? 'bg-sky-500' : isDark ? 'bg-slate-800' : 'bg-slate-300'
                     }`}
                   >
                     <span
                       className={`w-4.5 h-4.5 rounded-full absolute top-0.75 transition-transform ${
                         notifPrefs.emailReminders
-                          ? 'right-1 bg-zinc-900'
-                          : 'left-1 bg-zinc-400'
+                          ? 'right-1 bg-white'
+                          : 'left-1 bg-slate-400'
                       }`}
                     />
                   </button>
@@ -374,20 +374,20 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between py-1.5">
                   <div>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>SMS alerts</h4>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>2hr before appointments</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>2hr before appointments</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleNotifPref('smsAlerts')}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      notifPrefs.smsAlerts ? 'bg-zinc-200' : isDark ? 'bg-zinc-800' : 'bg-slate-300'
+                      notifPrefs.smsAlerts ? 'bg-sky-500' : isDark ? 'bg-slate-800' : 'bg-slate-300'
                     }`}
                   >
                     <span
                       className={`w-4.5 h-4.5 rounded-full absolute top-0.75 transition-transform ${
                         notifPrefs.smsAlerts
-                          ? 'right-1 bg-zinc-900'
-                          : 'left-1 bg-zinc-400'
+                          ? 'right-1 bg-white'
+                          : 'left-1 bg-slate-400'
                       }`}
                     />
                   </button>
@@ -397,20 +397,20 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between py-1.5">
                   <div>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Medication reminders</h4>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Daily dose alerts</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Daily dose alerts</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleNotifPref('medicationReminders')}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      notifPrefs.medicationReminders ? 'bg-zinc-200' : isDark ? 'bg-zinc-800' : 'bg-slate-300'
+                      notifPrefs.medicationReminders ? 'bg-sky-500' : isDark ? 'bg-slate-800' : 'bg-slate-300'
                     }`}
                   >
                     <span
                       className={`w-4.5 h-4.5 rounded-full absolute top-0.75 transition-transform ${
                         notifPrefs.medicationReminders
-                          ? 'right-1 bg-zinc-900'
-                          : 'left-1 bg-zinc-400'
+                          ? 'right-1 bg-white'
+                          : 'left-1 bg-slate-400'
                       }`}
                     />
                   </button>
@@ -420,20 +420,20 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between py-1.5">
                   <div>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Marketing emails</h4>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Tips and health news</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tips and health news</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleNotifPref('marketingEmails')}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      notifPrefs.marketingEmails ? 'bg-zinc-200' : isDark ? 'bg-zinc-800' : 'bg-slate-300'
+                      notifPrefs.marketingEmails ? 'bg-sky-500' : isDark ? 'bg-slate-800' : 'bg-slate-300'
                     }`}
                   >
                     <span
                       className={`w-4.5 h-4.5 rounded-full absolute top-0.75 transition-transform ${
                         notifPrefs.marketingEmails
-                          ? 'right-1 bg-zinc-900'
-                          : 'left-1 bg-zinc-400'
+                          ? 'right-1 bg-white'
+                          : 'left-1 bg-slate-400'
                       }`}
                     />
                   </button>
@@ -443,11 +443,11 @@ export default function SettingsPage() {
 
             {/* Card 2: Security */}
             <div
-              className={`rounded-3xl p-6 border transition-all ${
-                isDark ? 'bg-[#16171b] border-zinc-800/80' : 'bg-white border-slate-200 shadow-sm'
+              className={`rounded-3xl p-6 border transition-all shadow-xl shadow-black/40 ${
+                isDark ? 'bg-[#111827] border-[#1f293d]' : 'bg-white border-slate-200 shadow-sm'
               }`}
             >
-              <h3 className={`text-base font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-900'}`}>Security</h3>
+              <h3 className={`text-sm font-bold mb-5 pb-3 border-b border-[#1f293d] ${isDark ? 'text-white' : 'text-slate-900'}`}>Security</h3>
 
               <div className="space-y-4">
                 {/* Change Password */}
@@ -458,9 +458,9 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setIsPasswordModalOpen(true)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       isDark
-                        ? 'bg-zinc-800/90 border-zinc-700/80 text-white hover:bg-zinc-700'
+                        ? 'bg-[#162032] border-[#1f293d] text-white hover:bg-slate-800'
                         : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
@@ -472,34 +472,34 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between py-1.5">
                   <div>
                     <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Two-factor auth</h4>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Extra account security</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Extra account security</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => toggleSecurityPref('twoFactorAuth')}
                     className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                      securityPrefs.twoFactorAuth ? 'bg-zinc-200' : isDark ? 'bg-zinc-800' : 'bg-slate-300'
+                      securityPrefs.twoFactorAuth ? 'bg-sky-500' : isDark ? 'bg-slate-800' : 'bg-slate-300'
                     }`}
                   >
                     <span
                       className={`w-4.5 h-4.5 rounded-full absolute top-0.75 transition-transform ${
                         securityPrefs.twoFactorAuth
-                          ? 'right-1 bg-zinc-900'
-                          : 'left-1 bg-zinc-400'
+                          ? 'right-1 bg-white'
+                          : 'left-1 bg-slate-400'
                       }`}
                     />
                   </button>
                 </div>
 
                 {/* Delete Account */}
-                <div className="flex items-center justify-between pt-4 border-t border-zinc-800/60">
+                <div className="flex items-center justify-between pt-4 border-t border-[#1f293d]">
                   <div>
                     <h4 className="text-sm font-bold text-rose-500">Delete account</h4>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsDeleteModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-950/30 border border-rose-900/50 text-rose-400 hover:bg-rose-900/50 transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-950/40 border border-rose-500/30 text-rose-400 hover:bg-rose-900/40 transition-all cursor-pointer shadow-sm"
                   >
                     Delete
                   </button>

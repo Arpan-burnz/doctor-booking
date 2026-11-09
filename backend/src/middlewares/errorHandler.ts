@@ -1,14 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 
-const STATUS_MAP: Record<string, number> = {
-  'Email already registered': 409,
-  'Invalid credentials': 401,
-  'Invalid or expired refresh token': 401,
-  'User not found': 404,
-  'Doctor fields required': 400,
-};
-
 export const errorHandler = (
   err: Error, req: Request, res: Response, _next: NextFunction
 ) => {
@@ -33,6 +25,9 @@ export const errorHandler = (
     'Appointment not found': 404,
     'Already cancelled': 400,
     'Not authorized': 403,
+    'wait untill u get verified': 403,
+    'Account is deactivated': 403,
+    'Doctor account is currently suspended': 403,
   };
 
   const status = STATUS_MAP[err.message] || 400;

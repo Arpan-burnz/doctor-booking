@@ -97,9 +97,29 @@ export const verifyDoctor = async (req: Request, res: Response, next: NextFuncti
 export const rejectDoctor = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    await prisma.doctor.delete({
-      where: { id }
+    const doctor = await prisma.doctor.findUnique({ where: { id } });
+    if (!doctor) {
+      res.status(404).json({ error: 'Doctor not found' });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const appointments = await tx.appointment.findMany({
+        where: { doctorId: id },
+        select: { id: true },
+      });
+      const apptIds = appointments.map((a) => a.id);
+      if (apptIds.length > 0) {
+        await tx.prescription.deleteMany({ where: { appointmentId: { in: apptIds } } });
+        await tx.review.deleteMany({ where: { appointmentId: { in: apptIds } } });
+        await tx.appointment.deleteMany({ where: { id: { in: apptIds } } });
+      }
+      await tx.review.deleteMany({ where: { doctorId: id } });
+      await tx.availabilitySlot.deleteMany({ where: { doctorId: id } });
+      await tx.doctor.delete({ where: { id } });
+      await tx.user.delete({ where: { id: doctor.userId } }).catch(() => {});
     });
+
     res.json({ success: true, message: 'Doctor rejected and profile deleted' });
   } catch (err) { next(err); }
 };

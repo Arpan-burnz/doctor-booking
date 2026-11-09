@@ -1,52 +1,33 @@
 import { prisma } from './db';
 import bcrypt from 'bcryptjs';
 
+/**
+ * Ensures a system administrator exists for initial access to the admin dashboard.
+ * Does not overwrite existing admin passwords upon server reboot.
+ */
 export const ensureDemoUsersExist = async () => {
   try {
-    const demoPatientEmail = 'patient@doc4u.com';
-    const password = 'Patient@123';
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const patientUser = await prisma.user.upsert({
-      where: { email: demoPatientEmail },
-      update: { passwordHash, role: 'PATIENT' },
-      create: {
-        email: demoPatientEmail,
-        passwordHash,
-        role: 'PATIENT',
-        phone: '+91 98765 43210',
-      },
-    });
-
-    const patientRecord = await prisma.patient.findUnique({
-      where: { userId: patientUser.id },
-    });
-    if (!patientRecord) {
-      await prisma.patient.create({
-        data: { userId: patientUser.id },
-      });
-    }
-
-    console.log(`✅ Auto-seeded/reset demo patient: ${demoPatientEmail} / ${password}`);
-
     const demoAdminEmail = 'admin@doc4u.com';
-    const adminPassword = 'Admin@123';
-    const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
-
-    await prisma.user.upsert({
+    const existingAdmin = await prisma.user.findUnique({
       where: { email: demoAdminEmail },
-      update: { passwordHash: adminPasswordHash, role: 'ADMIN' },
-      create: {
-        email: demoAdminEmail,
-        passwordHash: adminPasswordHash,
-        role: 'ADMIN',
-        phone: '+91 00000 00000',
-        emailVerified: true,
-      },
     });
 
-    console.log(`✅ Auto-seeded/reset demo admin: ${demoAdminEmail} / ${adminPassword}`);
+    if (!existingAdmin) {
+      const adminPasswordHash = await bcrypt.hash('Admin@123', 10);
+      await prisma.user.create({
+        data: {
+          email: demoAdminEmail,
+          passwordHash: adminPasswordHash,
+          role: 'ADMIN',
+          phone: '+91 00000 00000',
+          emailVerified: true,
+        },
+      });
+      console.log(`✅ Initial system admin created: ${demoAdminEmail}`);
+    } else {
+      console.log(`✅ System admin ready: ${demoAdminEmail}`);
+    }
   } catch (err) {
-    console.error('Error ensuring demo users exist:', err);
+    console.error('Error ensuring admin user exists:', err);
   }
 };

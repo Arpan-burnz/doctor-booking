@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/lib/theme';
+import SilkShaderBackground from '@/components/SilkShaderBackground';
+import SmoothScroll from '@/components/SmoothScroll';
 
 export const metadata: Metadata = {
   title: 'DOC4U — Book Doctor Appointments',
@@ -11,9 +13,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <head />
-      <body className="bg-zinc-950 text-zinc-100 antialiased transition-colors duration-300">
+      <body className="bg-[#02010a] text-slate-100 antialiased relative min-h-screen selection:bg-purple-900/40 selection:text-purple-200">
+        <SilkShaderBackground />
         <ThemeProvider>
-          {children}
+          <SmoothScroll>
+            {children}
+          </SmoothScroll>
         </ThemeProvider>
       </body>
     </html>

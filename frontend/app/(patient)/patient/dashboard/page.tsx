@@ -1,9 +1,9 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getUserRole, getUsername } from '@/lib/auth';
-import { useTheme } from '@/lib/theme';
 import PatientSidebar from '@/components/shared/PatientSidebar';
 import {
   Plus,
@@ -13,24 +13,29 @@ import {
   Bell,
   Search,
   Loader2,
-  CheckCircle,
   Calendar,
   ChevronRight,
   ArrowRight,
+  Download,
+  Activity,
+  Heart,
+  Stethoscope,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react';
 
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
-  CONFIRMED: { bg: 'bg-emerald-950/30', text: 'text-emerald-400', border: 'border-emerald-900/30' },
-  COMPLETED: { bg: 'bg-blue-950/30', text: 'text-blue-405', border: 'border-blue-900/30' },
-  CANCELLED: { bg: 'bg-rose-950/30', text: 'text-rose-450', border: 'border-rose-900/30' },
-  PENDING: { bg: 'bg-amber-955/35', text: 'text-amber-400', border: 'border-amber-900/30' },
-  NO_SHOW: { bg: 'bg-zinc-800', text: 'text-zinc-400', border: 'border-zinc-700' },
+  CONFIRMED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  COMPLETED: { bg: 'bg-sky-500/10', text: 'text-sky-400', border: 'border-sky-500/30' },
+  CANCELLED: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30' },
+  PENDING: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+  NO_SHOW: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
 };
 
 export default function PatientDashboard() {
   const router = useRouter();
 
-  // States
   const [appointments, setAppointments] = useState<any[]>([]);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,26 +53,26 @@ export default function PatientDashboard() {
   const [profile, setProfile] = useState<{ fullName: string; email: string; avatarUrl?: string }>({
     fullName: '',
     email: '',
-    avatarUrl: ''
+    avatarUrl: '',
   });
-  const [activeTab, setActiveTab] = useState('Dashboard');
 
-  const { theme, setTheme, isDark } = useTheme();
-
-  // Load selections
   useEffect(() => {
-    if (getUserRole() !== 'PATIENT') { router.push('/login'); return; }
-    
+    if (getUserRole() !== 'PATIENT') {
+      router.push('/login');
+      return;
+    }
+
     Promise.all([
       api.get('/appointments/mine').then(res => res.data.data).catch(() => []),
-      api.get('/prescriptions/patient/mine').then(res => res.data.data).catch(() => [])
-    ]).then(([appts, prescs]) => {
-      setAppointments(appts || []);
-      setPrescriptions(prescs || []);
-    }).catch(() => router.push('/login'))
+      api.get('/prescriptions/patient/mine').then(res => res.data.data).catch(() => []),
+    ])
+      .then(([appts, prescs]) => {
+        setAppointments(appts || []);
+        setPrescriptions(prescs || []);
+      })
+      .catch(() => router.push('/login'))
       .finally(() => setLoading(false));
 
-    // Load profile
     const savedProfile = localStorage.getItem('doc4u_patient_profile');
     if (savedProfile) {
       try {
@@ -79,23 +84,23 @@ export default function PatientDashboard() {
       } catch (e) {}
     }
 
-    // Load saved medications from localStorage
     const savedMeds = localStorage.getItem('doc4u_patient_medications');
     if (savedMeds) {
       try {
         const parsed = JSON.parse(savedMeds);
-        setMeds(parsed.map((m: any) => ({
-          id: m.id,
-          name: `${m.name} ${m.doseAmount}`,
-          time: `${m.period || 'Scheduled'} - ${m.scheduleTime}`,
-          checked: !!m.checked
-        })));
+        setMeds(
+          parsed.map((m: any) => ({
+            id: m.id,
+            name: `${m.name} ${m.doseAmount}`,
+            time: `${m.period || 'Scheduled'} - ${m.scheduleTime}`,
+            checked: !!m.checked,
+          }))
+        );
       } catch (e) {}
     } else {
       setMeds([]);
     }
 
-    // Load saved vitals from localStorage
     const savedVitals = localStorage.getItem('doc4u_patient_vitals');
     if (savedVitals) {
       try {
@@ -119,118 +124,139 @@ export default function PatientDashboard() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const updated = parsed.map((m: any) => m.id.toString() === id.toString() ? { ...m, checked: !m.checked } : m);
+        const updated = parsed.map((m: any) =>
+          m.id.toString() === id.toString() ? { ...m, checked: !m.checked } : m
+        );
         localStorage.setItem('doc4u_patient_medications', JSON.stringify(updated));
       } catch (e) {}
     }
-    setMeds(prev => prev.map(m => m.id.toString() === id.toString() ? { ...m, checked: !m.checked } : m));
+    setMeds(prev =>
+      prev.map(m => (m.id.toString() === id.toString() ? { ...m, checked: !m.checked } : m))
+    );
   };
 
   const completedMeds = meds.filter(m => m.checked).length;
   const adherencePercent = meds.length > 0 ? Math.round((completedMeds / meds.length) * 100) : 0;
 
-  // Split appointments into categories
   const booked = appointments.filter((a: any) => a.status === 'CONFIRMED');
   const future = appointments.filter((a: any) => a.status === 'PENDING');
-  const previous = appointments.filter((a: any) => a.status === 'COMPLETED' || a.status === 'CANCELLED' || a.status === 'NO_SHOW');
+  const previous = appointments.filter(
+    (a: any) => a.status === 'COMPLETED' || a.status === 'CANCELLED' || a.status === 'NO_SHOW'
+  );
 
   const medsDue = meds.filter(m => !m.checked).length;
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-400">
-      <div className="text-center flex flex-col items-center gap-3">
-        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-        <p className="text-zinc-550 text-xs font-semibold tracking-wider font-sans">Tethering diagnostics overview...</p>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#090d16] text-slate-400">
+        <div className="text-center flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
+          <p className="text-slate-500 text-xs font-medium font-sans">
+            Loading patient overview...
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  const displayName = (profile.fullName && profile.fullName !== 'Arpan') ? profile.fullName : getUsername();
+  const displayName =
+    profile.fullName && profile.fullName !== 'Arpan' ? profile.fullName : getUsername();
 
   return (
-    <div className={`min-h-screen flex font-sans select-none antialiased transition-all duration-300 ${isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-slate-50 text-slate-800'
-      }`}>
-
+    <div className="min-h-screen flex font-sans antialiased bg-transparent text-slate-100 selection:bg-purple-900/40 selection:text-purple-200">
       {/* Shared Sidebar */}
       <PatientSidebar username={displayName} avatarUrl={profile.avatarUrl} />
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto px-4 md:px-8 pt-16 md:pt-7 pb-7 space-y-7 transition-all duration-300">
-
-        {/* Top Header Row */}
-        <div className="flex items-center justify-between">
+      <main className="flex-1 overflow-y-auto px-6 md:px-10 pt-16 md:pt-8 pb-10 space-y-6 max-w-7xl">
+        {/* Header: Grounded Context Title */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-905'}`}>{getGreeting()}, {displayName}</h1>
-            <p className={`text-xs font-medium mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Here's your health overview for today</p>
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Patient Overview
+            </h1>
+            <p className="text-xs font-normal text-slate-400 mt-1">
+              Active consultations and clinical records for {displayName}
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => router.push('/patient/notifications')}
-              className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer active:scale-95 ${isDark
-                ? 'bg-zinc-900 border-zinc-800/80 text-zinc-300 hover:bg-zinc-800 hover:text-white'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+              className="w-9 h-9 rounded-xl border border-[#1f293d] bg-[#111827] hover:bg-[#162032] text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               title="Notifications"
             >
-              <Bell className="w-4.5 h-4.5" />
+              <Bell className="w-4 h-4" />
             </button>
             <button
               onClick={() => router.push('/patient/doctors')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Book appointment</span>
             </button>
           </div>
         </div>
 
-        {/* Stats Row Grid (4 columns) — all cards are clickable */}
+        {/* 4 Stat Cards: Quiet Chrome, Sentence Case Labels, Tabular Numbers */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Upcoming', value: booked.length, icon: <Calendar className="w-5 h-5 text-blue-400" />, bg: 'bg-blue-600/10 border-blue-900/30', href: '/patient/appointments' },
-            { label: 'Completed', value: previous.filter((p: any) => p.status === 'COMPLETED').length, icon: <CheckCircle className="w-5 h-5 text-emerald-400" />, bg: 'bg-emerald-600/10 border-emerald-900/30', href: '/patient/appointments' },
-            { label: 'Medications due', value: medsDue, icon: <Pill className="w-5 h-5 text-amber-500" />, bg: 'bg-amber-600/10 border-amber-900/30', href: '/patient/medications' },
-            { label: 'Prescriptions', value: prescriptions.length, icon: <FileText className="w-5 h-5 text-purple-400" />, bg: 'bg-purple-600/10 border-purple-900/30', href: '/patient/prescriptions' },
+            {
+              label: 'Upcoming consultations',
+              value: booked.length,
+              icon: <Calendar className="w-4 h-4 text-sky-400" />,
+              href: '/patient/appointments',
+            },
+            {
+              label: 'Completed visits',
+              value: previous.filter((p: any) => p.status === 'COMPLETED').length,
+              icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />,
+              href: '/patient/appointments',
+            },
+            {
+              label: 'Medications due',
+              value: medsDue,
+              icon: <Pill className="w-4 h-4 text-amber-400" />,
+              href: '/patient/medications',
+            },
+            {
+              label: 'Prescriptions on file',
+              value: prescriptions.length,
+              icon: <FileText className="w-4 h-4 text-sky-400" />,
+              href: '/patient/prescriptions',
+            },
           ].map((s, idx) => (
             <button
               key={idx}
               onClick={() => router.push(s.href)}
-              className={`rounded-xl p-5 flex flex-col justify-between hover:-translate-y-0.5 transition-all shadow-xs min-h-[110px] border text-left cursor-pointer active:scale-[0.98] ${isDark
-                ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                : 'bg-white border-slate-200 hover:border-slate-300'
-                }`}
+              className="rounded-2xl p-4 sm:p-5 flex flex-col justify-between border border-[#1f293d] bg-[#111827] hover:border-slate-700 transition-colors text-left cursor-pointer min-h-[110px]"
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${s.bg}`}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#1f293d] bg-[#162032]">
                 {s.icon}
               </div>
               <div className="mt-3">
-                <div className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{s.value}</div>
-                <div className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{s.label}</div>
+                <div className="text-2xl font-semibold tracking-tight text-white tabular-nums">{s.value}</div>
+                <div className="text-[11px] font-normal text-slate-400 mt-0.5">
+                  {s.label}
+                </div>
               </div>
             </button>
           ))}
         </div>
 
-        {/* Main Dashboard Section Split */}
+        {/* Main Split: Appointments and Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          {/* Left Panel Card list (Categorized Appointments) */}
-          <div className={`lg:col-span-7 rounded-3xl p-6 flex flex-col justify-between transition-all border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-205 shadow-sm'
-            }`}>
+          {/* Left Panel: Appointments */}
+          <div className="lg:col-span-7 rounded-2xl p-6 border border-[#1f293d] bg-[#111827] flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-center mb-5">
-                <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Appointments</h3>
+              <div className="flex justify-between items-center mb-5 pb-3.5 border-b border-[#1f293d]">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-sky-400" />
+                  <h3 className="text-xs font-semibold text-white">Your appointments</h3>
+                </div>
                 <button
                   onClick={() => router.push('/patient/appointments')}
-                  className="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-0.5 cursor-pointer"
+                  className="text-xs font-medium text-sky-400 hover:text-sky-300 flex items-center gap-0.5 cursor-pointer"
                 >
                   <span>See all</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -238,38 +264,55 @@ export default function PatientDashboard() {
               </div>
 
               {appointments.length === 0 ? (
-                <div className="text-center py-10">
-                  <Calendar className={`w-10 h-10 ${isDark ? 'text-zinc-700' : 'text-slate-300'} mx-auto mb-3`} />
-                  <p className={`text-xs font-bold tracking-widest uppercase ${isDark ? 'text-zinc-500' : 'text-slate-450'}`}>No appointments</p>
+                <div className="text-center py-10 border border-dashed border-[#1f293d] rounded-xl">
+                  <Calendar className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-300">No scheduled appointments</p>
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
+                    Search for certified practitioners and reserve an open time slot.
+                  </p>
+                  <button
+                    onClick={() => router.push('/patient/doctors')}
+                    className="mt-3.5 px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                  >
+                    Find a doctor
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {booked.length > 0 && (
                     <div>
-                      <h4 className={`text-[9px] font-bold uppercase tracking-wider pl-1 mb-2.5 ${isDark ? 'text-zinc-505' : 'text-slate-500'}`}>Booked Appointments</h4>
-                      <div className="space-y-3">
+                      <h4 className="text-[11px] font-medium text-slate-400 mb-2">
+                        Confirmed appointments
+                      </h4>
+                      <div className="space-y-2">
                         {booked.map((appt: any) => (
-                          <AppointmentListItem key={appt.id} appt={appt} isDark={isDark} />
+                          <AppointmentListItem key={appt.id} appt={appt} />
                         ))}
                       </div>
                     </div>
                   )}
+
                   {future.length > 0 && (
                     <div>
-                      <h4 className={`text-[9px] font-bold uppercase tracking-wider pl-1 mb-2.5 ${isDark ? 'text-zinc-505' : 'text-slate-500'}`}>Future Appointments</h4>
-                      <div className="space-y-3">
+                      <h4 className="text-[11px] font-medium text-slate-400 mb-2">
+                        Pending review
+                      </h4>
+                      <div className="space-y-2">
                         {future.map((appt: any) => (
-                          <AppointmentListItem key={appt.id} appt={appt} isDark={isDark} />
+                          <AppointmentListItem key={appt.id} appt={appt} />
                         ))}
                       </div>
                     </div>
                   )}
+
                   {previous.length > 0 && (
                     <div>
-                      <h4 className={`text-[9px] font-bold uppercase tracking-wider pl-1 mb-2.5 ${isDark ? 'text-zinc-505' : 'text-slate-500'}`}>Previous Appointments</h4>
-                      <div className="space-y-3">
-                        {previous.map((appt: any) => (
-                          <AppointmentListItem key={appt.id} appt={appt} isDark={isDark} />
+                      <h4 className="text-[11px] font-medium text-slate-400 mb-2">
+                        Previous visits
+                      </h4>
+                      <div className="space-y-2">
+                        {previous.slice(0, 3).map((appt: any) => (
+                          <AppointmentListItem key={appt.id} appt={appt} />
                         ))}
                       </div>
                     </div>
@@ -279,81 +322,108 @@ export default function PatientDashboard() {
             </div>
           </div>
 
-          {/* Right Small Column (Quick Actions) */}
-          <div className={`lg:col-span-5 rounded-3xl p-6 transition-all border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-205 shadow-sm'
-            }`}>
-            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'} mb-5`}>Quick actions</h3>
+          {/* Right Column: Quick Navigation Tiles */}
+          <div className="lg:col-span-5 rounded-2xl p-6 border border-[#1f293d] bg-[#111827] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-4 pb-3.5 border-b border-[#1f293d]">
+                <Activity className="w-4 h-4 text-sky-400" />
+                <h3 className="text-xs font-semibold text-white">Quick actions</h3>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Find doctor', icon: <Search className="w-5 h-5 text-blue-500" />, action: () => router.push('/patient/doctors') },
-                { label: 'Upload file', icon: <FileText className="w-5 h-5 text-purple-500" />, action: () => router.push('/patient/prescriptions') },
-                { label: 'Health records', icon: <FileSpreadsheet className="w-5 h-5 text-emerald-500" />, action: () => router.push('/patient/health-records') },
-                { label: 'Set reminder', icon: <Bell className="w-5 h-5 text-amber-500" />, action: () => router.push('/patient/medications') },
-              ].map((act, idx) => (
-                <button
-                  key={idx}
-                  onClick={act.action}
-                  className={`flex flex-col items-center justify-center p-5 border rounded-2xl transition-all cursor-pointer text-center group active:scale-95 ${isDark
-                    ? 'border-zinc-800 bg-zinc-950/40 hover:bg-zinc-800/80 text-zinc-300 hover:text-white'
-                    : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100 text-slate-600 hover:text-slate-950'
-                    }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-3 group-hover:scale-105 transition-transform ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200 shadow-sm'
-                    }`}>
-                    {act.icon}
-                  </div>
-                  <span className="text-[11px] font-bold tracking-wide">{act.label}</span>
-                </button>
-              ))}
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  {
+                    label: 'Find doctor',
+                    desc: 'Browse specialties',
+                    icon: <Search className="w-4 h-4 text-sky-400" />,
+                    action: () => router.push('/patient/doctors'),
+                  },
+                  {
+                    label: 'Prescriptions',
+                    desc: 'Official Rx records',
+                    icon: <FileText className="w-4 h-4 text-sky-400" />,
+                    action: () => router.push('/patient/prescriptions'),
+                  },
+                  {
+                    label: 'Health records',
+                    desc: 'Clinical history',
+                    icon: <FileSpreadsheet className="w-4 h-4 text-sky-400" />,
+                    action: () => router.push('/patient/health-records'),
+                  },
+                  {
+                    label: 'Medications',
+                    desc: 'Scheduled dosage',
+                    icon: <Bell className="w-4 h-4 text-sky-400" />,
+                    action: () => router.push('/patient/medications'),
+                  },
+                ].map((act, idx) => (
+                  <button
+                    key={idx}
+                    onClick={act.action}
+                    className="flex flex-col items-start p-3.5 border border-[#1f293d] rounded-xl bg-[#162032] hover:border-slate-700 transition-colors cursor-pointer text-left"
+                  >
+                    <div className="w-7 h-7 rounded-lg border border-[#1f293d] bg-[#090d16] flex items-center justify-center mb-2">
+                      {act.icon}
+                    </div>
+                    <span className="text-xs font-semibold text-white">{act.label}</span>
+                    <span className="text-[11px] font-normal text-slate-400 mt-0.5">{act.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preparation notice */}
+            <div className="mt-5 p-3.5 rounded-xl bg-[#162032] border border-[#1f293d] flex items-start gap-2.5">
+              <Stethoscope className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-slate-200">Consultation preparation</p>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  Have previous lab reports and active prescription files accessible before your appointment begins.
+                </p>
+              </div>
             </div>
           </div>
-
         </div>
 
-        {/* Secondary Row Content */}
+        {/* Secondary Row: Medications & Vitals */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Medications checklist card */}
-          <div className={`rounded-3xl p-6 flex flex-col justify-between transition-all border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-205 shadow-sm'
-            }`}>
+          {/* Medications checklist */}
+          <div className="rounded-2xl p-6 border border-[#1f293d] bg-[#111827] flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-center mb-5">
-                <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Today's medications</h3>
-                <button onClick={() => router.push('/patient/medications')} className="text-xs font-bold text-blue-500 hover:text-blue-400 cursor-pointer">
+              <div className="flex justify-between items-center mb-4 pb-3.5 border-b border-[#1f293d]">
+                <div className="flex items-center gap-2">
+                  <Pill className="w-4 h-4 text-sky-400" />
+                  <h3 className="text-xs font-semibold text-white">Daily medications</h3>
+                </div>
+                <button
+                  onClick={() => router.push('/patient/medications')}
+                  className="text-xs font-medium text-sky-400 hover:text-sky-300 cursor-pointer"
+                >
                   Manage
                 </button>
               </div>
 
-              <div className="space-y-3.5">
+              <div className="space-y-2.5">
                 {meds.length === 0 ? (
-                  <div className="py-6 text-center flex flex-col items-center gap-3">
-                    <Pill className={`w-8 h-8 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
-                    <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>No medications added yet.</p>
-                    <button
-                      onClick={() => router.push('/patient/medications')}
-                      className="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>Add medications</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                  <div className="py-6 text-center border border-dashed border-[#1f293d] rounded-xl">
+                    <Pill className="w-6 h-6 text-slate-600 mx-auto mb-1.5" />
+                    <p className="text-xs font-normal text-slate-400">No active medications scheduled</p>
                   </div>
                 ) : (
                   meds.map(med => (
                     <div
                       key={med.id}
                       onClick={() => handleToggleMed(med.id)}
-                      className={`flex items-center justify-between p-3.5 border rounded-2xl transition-all cursor-pointer ${isDark ? 'bg-zinc-950/40 border-zinc-805 hover:border-zinc-750' : 'bg-slate-50/50 border-slate-200 hover:border-slate-300'
-                        }`}
+                      className="flex items-center justify-between p-3 border border-[#1f293d] rounded-xl bg-[#162032] hover:border-slate-700 transition-colors cursor-pointer"
                     >
                       <div>
-                        <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{med.name}</h4>
-                        <p className={`text-[10px] tracking-wide mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-550'}`}>{med.time}</p>
+                        <h4 className="text-xs font-medium text-white">{med.name}</h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{med.time}</p>
                       </div>
                       {med.checked ? (
-                        <CheckCircle2 className="w-5.5 h-5.5 text-blue-500" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       ) : (
-                        <div className={`w-5 h-5 rounded-full border ${isDark ? 'border-zinc-700 bg-zinc-900' : 'border-slate-300 bg-white'}`} />
+                        <div className="w-4 h-4 rounded-full border border-slate-600 bg-[#090d16]" />
                       )}
                     </div>
                   ))
@@ -361,90 +431,51 @@ export default function PatientDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 border-t border-zinc-850/50 pt-4">
-              <div className="flex justify-between items-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
-                <span className={isDark ? 'text-zinc-500' : 'text-slate-400'}>Today's adherence</span>
-                <span className={isDark ? 'text-zinc-300' : 'text-slate-700'}>{adherencePercent}%</span>
+            <div className="mt-5 border-t border-[#1f293d] pt-3.5">
+              <div className="flex justify-between items-center text-[11px] text-slate-400 mb-1.5">
+                <span>Adherence</span>
+                <span className="font-semibold text-slate-200 tabular-nums">{adherencePercent}%</span>
               </div>
-              <div className={`w-full h-2 rounded-full overflow-hidden border ${isDark ? 'bg-zinc-950 border-zinc-900' : 'bg-slate-100 border-slate-200'
-                }`}>
+              <div className="w-full h-1.5 rounded-full overflow-hidden bg-[#090d16]">
                 <div
-                  className="bg-blue-500 h-full rounded-full transition-all duration-300"
+                  className="bg-sky-400 h-full rounded-full transition-all duration-300"
                   style={{ width: `${adherencePercent}%` }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Vitals logs card */}
-          <div className={`rounded-3xl p-6 transition-all border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-205 shadow-sm'
-            }`}>
-            <div className="flex justify-between items-center mb-5">
-              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Health vitals</h3>
-              <button onClick={() => router.push('/patient/health-records')} className="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1 cursor-pointer">
-                <span>Update</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+          {/* Vitals Table: Quiet tabular format */}
+          <div className="rounded-2xl p-6 border border-[#1f293d] bg-[#111827]">
+            <div className="flex justify-between items-center mb-4 pb-3.5 border-b border-[#1f293d]">
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-sky-400" />
+                <h3 className="text-xs font-semibold text-white">Clinical vitals</h3>
+              </div>
+              <button
+                onClick={() => router.push('/patient/health-records')}
+                className="text-xs font-medium text-sky-400 hover:text-sky-300 cursor-pointer"
+              >
+                Update
               </button>
             </div>
-            {/* CTA banner when no vitals are logged */}
-            {vitals.bloodPressure === '--' && vitals.bloodSugar === '--' && vitals.heartRate === '--' && vitals.weight === '--' && (
-              <div className={`rounded-xl p-3.5 mb-4 flex items-center justify-between border ${isDark ? 'bg-blue-950/20 border-blue-900/30' : 'bg-blue-50 border-blue-100'}`}>
-                <p className={`text-xs font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>No vitals logged yet — track your health metrics.</p>
-                <button
-                  onClick={() => router.push('/patient/health-records')}
-                  className="text-xs font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1 cursor-pointer shrink-0 ml-2"
-                >
-                  <span>Log now</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
 
-            <div className={`divide-y space-y-3.5 ${isDark ? 'divide-zinc-800/60' : 'divide-slate-100'}`}>
+            <div className="divide-y divide-[#1f293d]">
               {[
-                {
-                  name: 'Blood pressure',
-                  value: vitals.bloodPressure !== '--' ? `${vitals.bloodPressure} mmHg` : '--',
-                  status: vitals.bloodPressureStatus,
-                  color: vitals.bloodPressureStatus === 'Not recorded'
-                    ? (isDark ? 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/50' : 'bg-slate-100 text-slate-500 border border-slate-200')
-                    : vitals.bloodPressureStatus === 'Normal'
-                    ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30'
-                    : 'bg-amber-955/35 text-amber-500 border border-amber-900/30'
-                },
-                {
-                  name: 'Blood sugar',
-                  value: vitals.bloodSugar !== '--' ? `${vitals.bloodSugar} mg/dL` : '--',
-                  status: vitals.bloodSugarStatus,
-                  color: vitals.bloodSugarStatus === 'Not recorded'
-                    ? (isDark ? 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/50' : 'bg-slate-100 text-slate-500 border border-slate-200')
-                    : vitals.bloodSugarStatus === 'Watch'
-                    ? 'bg-amber-955/35 text-amber-500 border border-amber-900/30'
-                    : 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30'
-                },
-                {
-                  name: 'Heart rate',
-                  value: vitals.heartRate !== '--' ? `${vitals.heartRate} bpm` : '--',
-                  status: vitals.heartRateStatus,
-                  color: vitals.heartRateStatus === 'Not recorded'
-                    ? (isDark ? 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/50' : 'bg-slate-100 text-slate-500 border border-slate-200')
-                    : 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30'
-                },
-                {
-                  name: 'Weight',
-                  value: vitals.weight !== '--' ? `${vitals.weight} kg` : '--',
-                  status: vitals.weightStatus,
-                  color: vitals.weightStatus === 'Not recorded'
-                    ? (isDark ? 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/50' : 'bg-slate-100 text-slate-500 border border-slate-200')
-                    : 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30'
-                },
+                { name: 'Blood pressure', value: vitals.bloodPressure !== '--' ? `${vitals.bloodPressure} mmHg` : '--', status: vitals.bloodPressureStatus },
+                { name: 'Blood sugar', value: vitals.bloodSugar !== '--' ? `${vitals.bloodSugar} mg/dL` : '--', status: vitals.bloodSugarStatus },
+                { name: 'Heart rate', value: vitals.heartRate !== '--' ? `${vitals.heartRate} bpm` : '--', status: vitals.heartRateStatus },
+                { name: 'Body weight', value: vitals.weight !== '--' ? `${vitals.weight} kg` : '--', status: vitals.weightStatus },
               ].map((v, idx) => (
-                <div key={idx} onClick={() => router.push('/patient/health-records')} className={`flex justify-between items-center pt-3 cursor-pointer p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-zinc-850/15' : 'hover:bg-slate-50'
-                  }`}>
-                  <span className={`text-xs font-semibold ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>{v.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{v.value}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider py-0.5 px-2 rounded-md ${v.color}`}>
+                <div
+                  key={idx}
+                  onClick={() => router.push('/patient/health-records')}
+                  className="flex justify-between items-center py-2.5 cursor-pointer hover:bg-[#162032] px-2 rounded-lg transition-colors"
+                >
+                  <span className="text-xs text-slate-400">{v.name}</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-medium text-white tabular-nums">{v.value}</span>
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#162032] text-slate-300 border border-[#1f293d]">
                       {v.status}
                     </span>
                   </div>
@@ -452,57 +483,66 @@ export default function PatientDashboard() {
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* Prescription and Docs Grid */}
-        <div className={`rounded-3xl p-6 border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-205 shadow-sm'
-          }`}>
-          <div className="flex justify-between items-center mb-5">
-            <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Recent prescriptions and documents</h3>
-            <button onClick={() => router.push('/patient/prescriptions')} className="text-xs font-bold text-blue-500 hover:text-blue-400 cursor-pointer">
+        {/* Prescriptions and Documents */}
+        <div className="rounded-2xl p-6 border border-[#1f293d] bg-[#111827]">
+          <div className="flex justify-between items-center mb-4 pb-3.5 border-b border-[#1f293d]">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-sky-400" />
+              <h3 className="text-xs font-semibold text-white">Recent prescriptions</h3>
+            </div>
+            <button
+              onClick={() => router.push('/patient/prescriptions')}
+              className="text-xs font-medium text-sky-400 hover:text-sky-300 cursor-pointer"
+            >
               View all
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {prescriptions.length === 0 ? (
-              <div className="py-8 text-center flex flex-col items-center justify-center col-span-1 md:col-span-2">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2.5 ${isDark ? 'bg-zinc-800/80 text-zinc-400' : 'bg-slate-100 text-slate-400'}`}>
-                  <FileText className="w-5 h-5" />
-                </div>
-                <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>No prescriptions or documents</p>
-                <p className={`text-[11px] max-w-xs mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
-                  Prescriptions issued by your doctor or uploaded records will appear here.
-                </p>
+              <div className="py-8 text-center col-span-1 md:col-span-2 border border-dashed border-[#1f293d] rounded-xl">
+                <FileText className="w-6 h-6 text-slate-600 mx-auto mb-1.5" />
+                <p className="text-xs text-slate-400">No prescriptions on file</p>
               </div>
             ) : (
               prescriptions.slice(0, 4).map((doc: any, idx: number) => {
-                const docTitle = doc.diagnosis ? `Prescription — ${doc.diagnosis}` : (doc.appointment?.doctor?.specialization ? `Prescription — Dr. ${doc.appointment.doctor.specialization}` : 'Prescription Document');
-                const docDate = doc.issuedAt ? new Date(doc.issuedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent';
-                const fileUrl = doc.fileUrl?.startsWith('http') ? doc.fileUrl : `http://localhost:5000${doc.fileUrl}`;
+                const docTitle = doc.diagnosis
+                  ? `Prescription: ${doc.diagnosis}`
+                  : doc.appointment?.doctor?.specialization
+                  ? `Prescription: Dr. ${doc.appointment.doctor.specialization}`
+                  : 'Official Prescription';
+                const docDate = doc.issuedAt
+                  ? new Date(doc.issuedAt).toLocaleDateString(undefined, {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : 'Recent';
+                const fileUrl = doc.fileUrl?.startsWith('http')
+                  ? doc.fileUrl
+                  : `http://localhost:5000${doc.fileUrl}`;
                 return (
-                  <div key={doc.id || idx} className={`flex items-center justify-between p-4 border rounded-2xl transition-all select-none ${isDark ? 'bg-zinc-950/40 border-zinc-800/80 hover:border-zinc-750' : 'bg-slate-50/50 border-slate-200 hover:border-slate-300'
-                    }`}>
-                    <div className="flex items-center gap-3.5">
-                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${isDark ? 'bg-rose-500/10 border-rose-900/30 text-rose-500' : 'bg-rose-50 border-rose-100 text-rose-600'
-                        }`}>
-                        <FileText className="w-5 h-5" />
+                  <div
+                    key={doc.id || idx}
+                    className="flex items-center justify-between p-3.5 border border-[#1f293d] rounded-xl bg-[#162032]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg border border-[#1f293d] bg-[#090d16] text-sky-400 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{docTitle}</h4>
-                        <p className={`text-[9px] font-semibold mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{docDate}</p>
+                        <h4 className="text-xs font-medium text-white truncate max-w-xs">{docTitle}</h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{docDate}</p>
                       </div>
                     </div>
                     <a
                       href={fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center border cursor-pointer active:scale-95 transition-all ${isDark
-                        ? 'bg-zinc-900 hover:bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-white'
-                        : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-900 shadow-sm font-semibold'
-                        }`}
-                      title="Download File"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#1f293d] bg-[#090d16] text-slate-400 hover:text-white transition-colors"
+                      title="Download file"
                     >
                       <Download className="w-3.5 h-3.5" />
                     </a>
@@ -512,40 +552,42 @@ export default function PatientDashboard() {
             )}
           </div>
         </div>
-
       </main>
     </div>
   );
 }
 
-function AppointmentListItem({ appt, isDark }: { appt: any; isDark: boolean }) {
-  const styles = statusColors[appt.status] || { bg: 'bg-zinc-800', text: 'text-zinc-400', border: 'border-zinc-700' };
-  const stylesLight = appt.status === 'CONFIRMED'
-    ? { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-150' }
-    : appt.status === 'PENDING'
-      ? { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-150' }
-      : { bg: 'bg-slate-100', text: 'text-slate-650', border: 'border-slate-200' };
+function AppointmentListItem({ appt }: { appt: any }) {
+  const styles = statusColors[appt.status] || {
+    bg: 'bg-slate-500/10',
+    text: 'text-slate-400',
+    border: 'border-slate-500/30',
+  };
 
-  const badgeStyles = isDark ? styles : stylesLight;
+  const doctorName = appt.doctor?.name || (appt.doctor?.specialization ? `Dr. ${appt.doctor.specialization}` : 'Specialist');
 
   return (
-    <div className={`flex items-center justify-between p-4 border rounded-2xl transition-all ${isDark ? 'bg-zinc-950/40 border-zinc-800/80 hover:border-zinc-750' : 'bg-slate-50/50 border-slate-200 hover:border-slate-300'
-      }`}>
-      <div className="flex items-center gap-3.5">
-        <div className={`w-10 h-10 rounded-full border flex items-center justify-center select-none shrink-0 ${isDark ? 'bg-blue-650/10 border-blue-900/30 text-blue-405' : 'bg-blue-50 border-blue-100 text-blue-600'
-          }`}>
-          <Activity className="w-5 h-5" />
+    <div className="flex items-center justify-between p-3.5 border border-[#1f293d] rounded-xl bg-[#162032]">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg border border-[#1f293d] bg-[#090d16] text-sky-400 flex items-center justify-center shrink-0">
+          <Stethoscope className="w-4 h-4" />
         </div>
         <div>
-          <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Dr. {appt.doctor?.specialization}</h4>
-          <p className={`text-[10px] font-semibold mt-0.5 tracking-wide ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
-            {appt.doctor?.bio ? `${appt.doctor.bio} — ` : ''}
-            {new Date(appt.slot?.slotDate).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} - {appt.slot?.startTime}
+          <h4 className="text-xs font-medium text-white">{doctorName}</h4>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            {appt.slot?.slotDate ? new Date(appt.slot.slotDate).toLocaleDateString(undefined, {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+            }) : 'Scheduled'}
+            {appt.slot?.startTime ? ` at ${appt.slot.startTime}` : ''}
           </p>
         </div>
       </div>
-      <span className={`text-[9px] font-extrabold uppercase tracking-wider py-1 px-2.5 rounded-lg border shrink-0 ${badgeStyles.bg} ${badgeStyles.text} ${badgeStyles.border}`}>
-        {appt.status}
+      <span
+        className={`text-[10px] font-medium px-2 py-0.5 rounded-md border shrink-0 ${styles.bg} ${styles.text} ${styles.border}`}
+      >
+        {appt.status === 'CONFIRMED' ? 'Confirmed' : appt.status === 'PENDING' ? 'Pending' : appt.status}
       </span>
     </div>
   );

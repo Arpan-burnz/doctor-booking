@@ -1,0 +1,21 @@
+{
+  "name": "unslop",
+  "displayName": "Unslop",
+  "description": "Turns vibecoded, AI-looking UI into a designed interface with its own character. Audits visual slop tells and systematically refines spacing, color, icons, copy, typography, layout, details, visuals, and motion.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Damir Sokolovsky",
+    "url": "https://x.com/heydamir"
+  },
+  "homepage": "https://heydamir.design/unslop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/heydamir/unslop"
+  },
+  "suggestedPrompts": [
+    "Unslop this screen and remove generic AI UI patterns",
+    "Audit this interface for visual slop and set a design direction",
+    "Redesign this component with intentional typography and quiet chrome"
+  ]
+}
+
