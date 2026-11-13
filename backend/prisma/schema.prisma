@@ -28,18 +28,22 @@ enum AppointmentStatus {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String
-  role          Role     @default(PATIENT)
-  phone         String?
-  emailVerified Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  doctor        Doctor?
-  patient       Patient?
-  refreshTokens RefreshToken[]
-  notifications Notification[]
+  id                         String    @id @default(uuid())
+  email                      String    @unique
+  name                       String?
+  passwordHash               String
+  role                       Role      @default(PATIENT)
+  phone                      String?
+  emailVerified              Boolean   @default(false)
+  isActive                   Boolean   @default(true)
+  verificationToken          String?   @unique
+  verificationTokenExpiresAt DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+  doctor                     Doctor?
+  patient                    Patient?
+  refreshTokens              RefreshToken[]
+  notifications              Notification[]
 }
 
 model RefreshToken {
@@ -57,9 +61,12 @@ model Doctor {
   name            String?
   specialization  String
   licenseNumber   String   @unique
+  medicalCouncil  String?
+  certificateUrl  String?
   consultationFee Int
   bio             String?
   isVerified      Boolean  @default(false)
+  isSuspended     Boolean  @default(false)
   experience      Int?
   createdAt       DateTime @default(now())
   user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -71,6 +78,7 @@ model Doctor {
 model Patient {
   id           String    @id @default(uuid())
   userId       String    @unique
+  gender       String?
   dateOfBirth  DateTime?
   bloodGroup   String?
   address      String?
@@ -139,4 +147,10 @@ model Notification {
   isRead  Boolean  @default(false)
   sentAt  DateTime @default(now())
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
