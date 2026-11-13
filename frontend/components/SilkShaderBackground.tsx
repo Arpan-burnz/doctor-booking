@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 const VERTEX_SHADER_SOURCE = `
 attribute vec2 a_position;
@@ -291,9 +292,14 @@ void main() {
 `;
 
 export default function SilkShaderBackground() {
+  const pathname = usePathname();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const isExcludedRoute = pathname?.startsWith('/admin');
+  const isDoctorRoute = pathname?.startsWith('/doctor');
+
   useEffect(() => {
+    if (isExcludedRoute) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -414,15 +420,25 @@ export default function SilkShaderBackground() {
     resize();
     window.addEventListener('resize', resize, { passive: true });
 
-    // Animation loop with tab visibility pause
+    // Animation loop with tab visibility pause and 30 FPS cap to save >70% GPU cycles
     let animationFrameId: number;
     let isPaused = false;
     let lastTime = performance.now();
+    let lastRenderTime = 0;
+    const TARGET_FPS = 30;
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
     let accumulatedSeconds = 0;
 
     const render = (now: number) => {
       if (isPaused) return;
 
+      const elapsed = now - lastRenderTime;
+      if (elapsed < FRAME_INTERVAL) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
+      lastRenderTime = now - (elapsed % FRAME_INTERVAL);
       const deltaSeconds = Math.min((now - lastTime) / 1000, 0.1); // clamp delta to prevent jumps
       lastTime = now;
       accumulatedSeconds += deltaSeconds;
@@ -441,6 +457,7 @@ export default function SilkShaderBackground() {
       } else {
         isPaused = false;
         lastTime = performance.now();
+        lastRenderTime = performance.now();
         animationFrameId = requestAnimationFrame(render);
       }
     };
@@ -459,13 +476,17 @@ export default function SilkShaderBackground() {
       if (vertShader) gl.deleteShader(vertShader);
       if (fragShader) gl.deleteShader(fragShader);
     };
-  }, []);
+  }, [isExcludedRoute]);
+
+  if (isExcludedRoute) return null;
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="fixed inset-0 w-full h-full -z-10 pointer-events-none select-none block"
+      className={`fixed inset-0 w-full h-full -z-10 pointer-events-none select-none block transition-opacity duration-700 ${
+        isDoctorRoute ? 'opacity-60' : 'opacity-100'
+      }`}
       style={{
         position: 'fixed',
         top: 0,

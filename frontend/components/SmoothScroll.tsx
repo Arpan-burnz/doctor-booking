@@ -20,17 +20,14 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     // Calibrated for high-refresh-rate displays (90Hz, 120Hz ProMotion, 144Hz, 240Hz)
     // Lerp (linear interpolation) dynamically distributes motion across every hardware V-Sync frame
     const lenis = new Lenis({
-      lerp: 0.09, // Optimal coefficient: dynamically scales with refresh rate (90Hz = 90 interpolation ticks/sec)
+      lerp: 0.09,
       duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 1.0,
-      syncTouch: true, // Smooth touch velocity on 90Hz/120Hz mobile displays
-      syncTouchLerp: 0.08,
-      touchMultiplier: 1.6,
-      touchInertiaExponent: 1.75,
+      syncTouch: false, // Let mobile touch devices use native 120Hz hardware scrolling for zero lag
       autoResize: true,
     });
 
