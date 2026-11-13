@@ -1,6 +1,7 @@
 import { env } from '../config/env';
 import crypto from 'crypto';
 import path from 'path';
+import fs from 'fs';
 
 const ALLOWED_EXTENSIONS = new Set(['.pdf', '.png', '.jpg', '.jpeg', '.webp']);
 const ALLOWED_MIME_TYPES = new Set([
@@ -22,10 +23,16 @@ export const uploadFile = async (
   const sanitizedBasename = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
   const safeFileName = `${crypto.randomUUID()}-${sanitizedBasename}`;
 
-  // If no AWS keys — return mock URL immediately, don't touch S3
+  // If no AWS keys — save locally to disk so admin can view/download
   if (!env.AWS_ACCESS_KEY_ID || !env.AWS_SECRET_ACCESS_KEY || !env.AWS_BUCKET_NAME) {
-    console.log('📁 S3 skipped — returning mock URL');
-    return `https://mock-s3.local/${folder}/${safeFileName}`;
+    const uploadDir = path.join(process.cwd(), 'uploads', folder);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const localFilePath = path.join(uploadDir, safeFileName);
+    fs.writeFileSync(localFilePath, file.buffer);
+    console.log(`📁 File saved locally to: ${localFilePath}`);
+    return `/uploads/${folder}/${safeFileName}`;
   }
 
   // Only runs if AWS keys are actually set

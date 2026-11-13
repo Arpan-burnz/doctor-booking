@@ -1,5 +1,9 @@
 import type { Request, Response, NextFunction } from 'express';
+import path from 'path';
+import fs from 'fs';
+import { z } from 'zod';
 import { prisma } from '../../config/db';
+import { env } from '../../config/env';
 
 export const getStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -10,13 +14,9 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
     const totalUsers = await prisma.user.count({ where: { role: 'PATIENT' } });
-    const totalDoctorsQuery: any = await prisma.$queryRaw`SELECT COUNT(*) FROM "Doctor" WHERE "isVerified" = true AND "isSuspended" = false`;
-    const pendingDoctorsQuery: any = await prisma.$queryRaw`SELECT COUNT(*) FROM "Doctor" WHERE "isVerified" = false`;
-    const suspendedDoctorsQuery: any = await prisma.$queryRaw`SELECT COUNT(*) FROM "Doctor" WHERE "isSuspended" = true`;
-    
-    const totalDoctors = Number(totalDoctorsQuery[0].count);
-    const pendingDoctors = Number(pendingDoctorsQuery[0].count);
-    const suspendedDoctors = Number(suspendedDoctorsQuery[0].count);
+    const totalDoctors = await prisma.doctor.count({ where: { isVerified: true, isSuspended: false } });
+    const pendingDoctors = await prisma.doctor.count({ where: { isVerified: false } });
+    const suspendedDoctors = await prisma.doctor.count({ where: { isSuspended: true } });
     const totalAppointments = await prisma.appointment.count();
 
     const appointmentsThisMonth = await prisma.appointment.count({
@@ -83,6 +83,201 @@ export const getAllDoctors = async (req: Request, res: Response, next: NextFunct
   } catch (err) { next(err); }
 };
 
+export const getDoctorById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+
+    const doctorRows: any = await prisma.$queryRaw`
+      SELECT d.*, u.email, u.phone, u."isActive" as "userIsActive", u."createdAt" as "userCreatedAt"
+      FROM "Doctor" d
+      JOIN "User" u ON d."userId" = u.id
+      WHERE d.id = ${id}
+      LIMIT 1
+    `;
+
+    if (!doctorRows || doctorRows.length === 0) {
+      res.status(404).json({ error: 'Doctor not found' });
+      return;
+    }
+
+    const doctor = doctorRows[0];
+
+    // Total appointments count & breakdown
+    const appointmentsCount = await prisma.appointment.count({ where: { doctorId: id } });
+    const completedCount = await prisma.appointment.count({ where: { doctorId: id, status: 'COMPLETED' } });
+    const cancelledCount = await prisma.appointment.count({ where: { doctorId: id, status: 'CANCELLED' } });
+    const confirmedCount = await prisma.appointment.count({ where: { doctorId: id, status: 'CONFIRMED' } });
+
+    // Unique patients count
+    const distinctPatients = await prisma.appointment.groupBy({
+      by: ['patientId'],
+      where: { doctorId: id },
+    });
+    const patientsCount = distinctPatients.length;
+
+    // Total revenue
+    const revenue = completedCount * (doctor.consultationFee || 0);
+
+    // Reviews summary
+    const reviewsAgg = await prisma.review.aggregate({
+      where: { doctorId: id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+    const avgRating = reviewsAgg._avg.rating ? Number(reviewsAgg._avg.rating.toFixed(1)) : 0;
+    const reviewsCount = reviewsAgg._count.rating || 0;
+
+    // Recent reviews with patient user info
+    const recentReviews = await prisma.review.findMany({
+      where: { doctorId: id },
+      include: {
+        patient: {
+          include: {
+            user: { select: { name: true, email: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+    });
+
+    // Recent appointments
+    const recentAppointments = await prisma.appointment.findMany({
+      where: { doctorId: id },
+      include: {
+        slot: true,
+        patient: {
+          include: {
+            user: { select: { name: true, email: true, phone: true } },
+          },
+        },
+      },
+      orderBy: { bookedAt: 'desc' },
+      take: 8,
+    });
+
+    // Upcoming availability slots
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcomingSlots = await prisma.availabilitySlot.findMany({
+      where: { doctorId: id, slotDate: { gte: today } },
+      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
+      take: 12,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...doctor,
+        stats: {
+          totalAppointments: appointmentsCount,
+          completedAppointments: completedCount,
+          cancelledAppointments: cancelledCount,
+          confirmedAppointments: confirmedCount,
+          patientsCount,
+          totalRevenue: revenue,
+          avgRating,
+          reviewsCount,
+        },
+        recentReviews: recentReviews.map(r => ({
+          id: r.id,
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.createdAt,
+          patientName: r.patient?.user?.name || 'Anonymous Patient',
+          patientEmail: r.patient?.user?.email,
+        })),
+        recentAppointments: recentAppointments.map(a => ({
+          id: a.id,
+          status: a.status,
+          slotDate: a.slot?.slotDate,
+          startTime: a.slot?.startTime,
+          endTime: a.slot?.endTime,
+          bookedAt: a.bookedAt,
+          patientName: a.patient?.user?.name || 'Patient',
+          patientEmail: a.patient?.user?.email,
+          patientPhone: a.patient?.user?.phone,
+        })),
+        upcomingSlots,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+export const getDoctorCertificate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const doctor = await prisma.doctor.findUnique({
+      where: { id },
+      select: { id: true, name: true, certificateUrl: true, medicalCouncil: true, licenseNumber: true },
+    });
+
+    if (!doctor) {
+      res.status(404).json({ error: 'Doctor not found' });
+      return;
+    }
+
+    if (!doctor.certificateUrl) {
+      res.status(404).json({ error: 'No verification certificate uploaded for this doctor' });
+      return;
+    }
+
+    // Local file path (starts with /uploads/)
+    if (doctor.certificateUrl.startsWith('/uploads/')) {
+      const cleanPath = doctor.certificateUrl.replace(/^\//, '');
+      const absolutePath = path.resolve(process.cwd(), cleanPath);
+      if (!fs.existsSync(absolutePath)) {
+        res.status(404).json({ error: 'Certificate file not found on server' });
+        return;
+      }
+
+      const ext = path.extname(absolutePath).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.pdf': 'application/pdf',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.webp': 'image/webp',
+      };
+      const contentType = mimeMap[ext] || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${path.basename(absolutePath)}"`);
+      return res.sendFile(absolutePath);
+    }
+
+    // If AWS S3 URL and AWS credentials configured, generate presigned URL or redirect
+    if (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.AWS_BUCKET_NAME) {
+      try {
+        const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
+        const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+        const s3 = new S3Client({
+          region: env.AWS_REGION || 'ap-south-1',
+          credentials: {
+            accessKeyId: env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+          },
+        });
+
+        const urlObj = new URL(doctor.certificateUrl);
+        const key = urlObj.pathname.replace(/^\//, '');
+
+        const command = new GetObjectCommand({
+          Bucket: env.AWS_BUCKET_NAME,
+          Key: key,
+        });
+
+        const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 900 });
+        return res.redirect(presignedUrl);
+      } catch (s3Err: any) {
+        console.error('Error creating S3 presigned URL:', s3Err);
+        return res.redirect(doctor.certificateUrl);
+      }
+    }
+
+    return res.redirect(doctor.certificateUrl);
+  } catch (err) { next(err); }
+};
+
 export const verifyDoctor = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
@@ -127,7 +322,22 @@ export const rejectDoctor = async (req: Request, res: Response, next: NextFuncti
 export const suspendDoctor = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    await prisma.$executeRaw`UPDATE "Doctor" SET "isSuspended" = true WHERE id = ${id}`;
+    await prisma.doctor.update({
+      where: { id },
+      data: { isSuspended: true },
+    });
+
+    // Remove future unbooked slots so no new appointments can be scheduled
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    await prisma.availabilitySlot.deleteMany({
+      where: {
+        doctorId: id,
+        isBooked: false,
+        slotDate: { gte: today },
+      },
+    });
+
     res.json({ success: true, message: 'Doctor suspended successfully' });
   } catch (err) { next(err); }
 };
@@ -135,7 +345,10 @@ export const suspendDoctor = async (req: Request, res: Response, next: NextFunct
 export const reinstateDoctor = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    await prisma.$executeRaw`UPDATE "Doctor" SET "isSuspended" = false WHERE id = ${id}`;
+    await prisma.doctor.update({
+      where: { id },
+      data: { isSuspended: false },
+    });
     res.json({ success: true, message: 'Doctor reinstated successfully' });
   } catch (err) { next(err); }
 };
@@ -156,16 +369,16 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
 
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const totalQuery: any = await prisma.$queryRaw`SELECT COUNT(*) FROM "User" WHERE role = 'PATIENT'::"Role"`;
-    const activeQuery: any = await prisma.$queryRaw`SELECT COUNT(*) FROM "User" WHERE role = 'PATIENT'::"Role" AND "isActive" = true`;
-    const deactivatedQuery: any = await prisma.$queryRaw`SELECT COUNT(*) FROM "User" WHERE role = 'PATIENT'::"Role" AND "isActive" = false`;
+    const totalPatients = await prisma.user.count({ where: { role: 'PATIENT' } });
+    const activeAccounts = await prisma.user.count({ where: { role: 'PATIENT', isActive: true } });
+    const deactivated = await prisma.user.count({ where: { role: 'PATIENT', isActive: false } });
 
     res.json({
       success: true,
       data: {
-        totalPatients: Number(totalQuery[0].count),
-        activeAccounts: Number(activeQuery[0].count),
-        deactivated: Number(deactivatedQuery[0].count),
+        totalPatients,
+        activeAccounts,
+        deactivated,
       }
     });
   } catch (err) { next(err); }
@@ -174,7 +387,10 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
 export const deactivateUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    await prisma.$executeRaw`UPDATE "User" SET "isActive" = false WHERE id = ${id}`;
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
     res.json({ success: true, message: 'User deactivated successfully' });
   } catch (err) { next(err); }
 };
@@ -182,7 +398,10 @@ export const deactivateUser = async (req: Request, res: Response, next: NextFunc
 export const restoreUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = req.params.id as string;
-    await prisma.$executeRaw`UPDATE "User" SET "isActive" = true WHERE id = ${id}`;
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: true },
+    });
     res.json({ success: true, message: 'User restored successfully' });
   } catch (err) { next(err); }
 };
@@ -360,13 +579,45 @@ export const getAlerts = async (req: Request, res: Response, next: NextFunction)
   } catch (err) { next(err); }
 };
 
-let platformConfig = {
+const DEFAULT_CONFIG = {
   newRegistrations: true,
   doctorRegistration: true,
   emailNotifications: true,
   smsNotifications: false,
-  maintenanceMode: false
+  maintenanceMode: false,
 };
+
+type ConfigKey = keyof typeof DEFAULT_CONFIG;
+
+async function getPlatformConfig(): Promise<typeof DEFAULT_CONFIG> {
+  try {
+    const rows = await prisma.platformSetting.findMany();
+    const config = { ...DEFAULT_CONFIG };
+    for (const row of rows) {
+      if (row.key in config) {
+        (config as any)[row.key] = row.value === 'true';
+      }
+    }
+    return config;
+  } catch (err) {
+    console.error('Failed to load platform settings from database, fallback to defaults:', err);
+    return DEFAULT_CONFIG;
+  }
+}
+
+async function savePlatformConfig(updates: Partial<typeof DEFAULT_CONFIG>): Promise<typeof DEFAULT_CONFIG> {
+  const entries = Object.entries(updates) as [ConfigKey, boolean][];
+  await Promise.all(
+    entries.map(([key, value]) =>
+      prisma.platformSetting.upsert({
+        where: { key },
+        update: { value: String(value) },
+        create: { key, value: String(value) },
+      })
+    )
+  );
+  return getPlatformConfig();
+}
 
 export const getSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -381,10 +632,12 @@ export const getSettings = async (req: Request, res: Response, next: NextFunctio
       dbOnline = true;
     } catch(e) {}
 
+    const config = await getPlatformConfig();
+
     res.json({
       success: true,
       data: {
-        config: platformConfig,
+        config,
         admins,
         health: {
           api: true,
@@ -399,7 +652,15 @@ export const getSettings = async (req: Request, res: Response, next: NextFunctio
 
 export const updateSettings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    platformConfig = { ...platformConfig, ...req.body };
-    res.json({ success: true, message: 'Settings saved' });
+    const settingsSchema = z.object({
+      newRegistrations: z.boolean().optional(),
+      doctorRegistration: z.boolean().optional(),
+      emailNotifications: z.boolean().optional(),
+      smsNotifications: z.boolean().optional(),
+      maintenanceMode: z.boolean().optional(),
+    });
+    const parsed = settingsSchema.parse(req.body);
+    const updatedConfig = await savePlatformConfig(parsed);
+    res.json({ success: true, message: 'Settings saved', data: updatedConfig });
   } catch (err) { next(err); }
 };

@@ -1,9 +1,10 @@
 import cron from 'node-cron';
 import { prisma } from '../config/db';
+import { isSlotExpired } from '../modules/slots/slots.service';
 
 export const startCleanupJob = () => {
-  // Runs every hour — marks past unattended appointments as NO_SHOW
-  cron.schedule('0 * * * *', async () => {
+  // Runs every 15 minutes — marks past unattended appointments as NO_SHOW and prunes stale unbooked slots
+  cron.schedule('*/15 * * * *', async () => {
     console.log('🧹 Running cleanup job...');
 
     const now = new Date();
@@ -11,13 +12,13 @@ export const startCleanupJob = () => {
     const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     try {
-      // Find candidate booked slots that might have already ended (past dates or today)
+      // 1. Find candidate booked slots that might have already ended (past dates or today)
       const candidateSlots = await prisma.availabilitySlot.findMany({
         where: {
           slotDate: { lte: endOfToday },
           isBooked: true,
           appointment: {
-            status: 'CONFIRMED',
+            status: { in: ['CONFIRMED', 'PENDING'] },
           },
         },
         include: { appointment: true },
@@ -26,40 +27,24 @@ export const startCleanupJob = () => {
       for (const slot of candidateSlots) {
         if (!slot.appointment) continue;
 
-        const slotDate = new Date(slot.slotDate);
-        let isPast = false;
-
-        if (slotDate < startOfToday) {
-          // Appointment was on a prior calendar day
-          isPast = true;
-        } else {
-          // Appointment is today: check if slot.endTime has passed
-          const timeParts = slot.endTime.split(':').map(Number);
-          const endHours = timeParts[0] || 0;
-          const endMins = timeParts[1] || 0;
-
-          const slotEndDateTime = new Date(
-            slotDate.getFullYear(),
-            slotDate.getMonth(),
-            slotDate.getDate(),
-            endHours,
-            endMins,
-            0,
-            0
-          );
-
-          if (slotEndDateTime < now) {
-            isPast = true;
-          }
-        }
-
-        if (isPast) {
+        if (isSlotExpired(slot.slotDate, slot.endTime, now)) {
           await prisma.appointment.update({
             where: { id: slot.appointment.id },
             data: { status: 'NO_SHOW' },
           });
-          console.log(`🔴 Marked appointment ${slot.appointment.id} as NO_SHOW`);
+          console.log(`🔴 Marked expired unattended appointment ${slot.appointment.id} as NO_SHOW`);
         }
+      }
+
+      // 2. Prune unbooked slots from prior days to avoid database bloat
+      const pruned = await prisma.availabilitySlot.deleteMany({
+        where: {
+          slotDate: { lt: startOfToday },
+          isBooked: false,
+        },
+      });
+      if (pruned.count > 0) {
+        console.log(`🧹 Pruned ${pruned.count} stale unbooked past slot(s)`);
       }
 
       console.log('✅ Cleanup job completed');
@@ -68,5 +53,5 @@ export const startCleanupJob = () => {
     }
   });
 
-  console.log('🧹 Cleanup cron job scheduled (every hour)');
+  console.log('🧹 Cleanup cron job scheduled (every 15 minutes)');
 };

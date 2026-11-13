@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import { env } from './config/env';
 import { authRouter } from './modules/auth/auth.router';
 import { doctorsRouter } from './modules/doctors/doctors.router';
@@ -16,6 +17,7 @@ import { ensureDemoUsersExist } from './config/seedDemoUsers';
 import rateLimit from 'express-rate-limit';
 
 const app = express();
+app.set('trust proxy', 1);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -27,7 +29,14 @@ const authLimiter = rateLimit({
 
 app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow localhost, localtunnel, and devtunnels
+    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.endsWith('.loca.lt') || origin.endsWith('.devtunnels.ms')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -43,49 +52,19 @@ app.use('/api/appointments',  appointmentsRouter);
 app.use('/api/prescriptions', prescriptionsRouter);
 app.use('/api/admin',         adminRouter);
 
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 app.use(errorHandler);
 
 import { prisma } from './config/db';
 
 app.listen(Number(env.PORT), async () => {
   console.log(`✅ Server running on http://localhost:${env.PORT}`);
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Doctor" ADD COLUMN "isSuspended" BOOLEAN DEFAULT false;`);
-    console.log('✅ Added isSuspended column to Doctor table');
-  } catch (err: any) {
-    if (err.message && err.message.includes('already exists')) {
-      // Ignore
-    } else if (err.code === '42701') {
-      // Ignore postgres error code for column already exists
-    } else {
-      console.error('Migration error (Doctor):', err);
-    }
-  }
 
   try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "isActive" BOOLEAN DEFAULT true;`);
-    console.log('✅ Added isActive column to User table');
+    await prisma.$executeRawUnsafe(`UPDATE "User" SET "emailVerified" = true WHERE "emailVerified" = false;`);
   } catch (err: any) {
-    if (err.message && err.message.includes('already exists')) {
-      // Ignore
-    } else if (err.code === '42701') {
-      // Ignore
-    } else {
-      console.error('Migration error (User):', err);
-    }
-  }
-
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE "Doctor" ADD COLUMN IF NOT EXISTS "name" TEXT;`);
-    console.log('✅ Added name column to Doctor table');
-  } catch (err: any) {
-    if (err.message && err.message.includes('already exists')) {
-      // Ignore
-    } else if (err.code === '42701') {
-      // Ignore
-    } else {
-      console.error('Migration error (Doctor name):', err);
-    }
+    // Ignore
   }
 
   ensureDemoUsersExist().catch((err) => console.error('Auto seed error:', err));
