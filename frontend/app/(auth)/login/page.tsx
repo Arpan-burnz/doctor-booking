@@ -46,21 +46,6 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemo = (role: 'PATIENT' | 'DOCTOR' | 'ADMIN') => {
-    if (role === 'ADMIN') {
-      setForm({ email: 'admin@doc4u.com', password: 'Admin@123' });
-      setError('');
-    } else if (role === 'DOCTOR') {
-      setLoginRole('DOCTOR');
-      setForm({ email: 'doctor@doc4u.com', password: 'Password123!' });
-      setError('');
-    } else {
-      setLoginRole('PATIENT');
-      setForm({ email: 'patient@doc4u.com', password: 'Password123!' });
-      setError('');
-    }
-  };
-
   const isDoctor = loginRole === 'DOCTOR';
 
   return (
@@ -137,9 +122,11 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 flex items-start gap-2.5 text-xs text-rose-300 font-medium mb-4">
-              <AlertCircle className="w-4 h-4 mt-0.5 text-rose-400 shrink-0" />
-              <span className="leading-tight">{error}</span>
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 text-xs text-rose-300 font-medium mb-4">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 mt-0.5 text-rose-400 shrink-0" />
+                <span className="leading-tight">{error}</span>
+              </div>
             </div>
           )}
 
@@ -209,39 +196,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Credentials */}
-          <div className="mt-5 pt-4 border-t border-[#1f293d]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-medium text-slate-400">
-                Quick demo fill
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                onClick={() => fillDemo('PATIENT')}
-                className="py-1 px-2 rounded-md bg-[#162032] hover:bg-[#1a263c] border border-[#1f293d] text-[11px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-              >
-                Patient
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo('DOCTOR')}
-                className="py-1 px-2 rounded-md bg-[#162032] hover:bg-[#1a263c] border border-[#1f293d] text-[11px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
-              >
-                Doctor
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo('ADMIN')}
-                className="py-1 px-2 rounded-md bg-[#162032] hover:bg-[#1a263c] border border-[#1f293d] text-[11px] font-medium text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
-              >
-                Admin
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-[#1f293d] text-center">
+          <div className="mt-5 pt-4 border-t border-[#1f293d] text-center">
             <p className="text-xs text-slate-400">
               New to DOC4U?{' '}
               <Link href="/register" className="text-sky-400 hover:text-sky-300 font-medium">

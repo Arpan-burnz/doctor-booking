@@ -43,13 +43,13 @@ export default function PatientsPage() {
   });
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-transparent">
       <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-[#090d16] text-slate-100">
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-transparent text-slate-100">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white tracking-tight">Patient directory</h1>
         <p className="text-slate-400 text-xs mt-1">{patients.length} unique patients under your clinical care</p>
@@ -68,7 +68,7 @@ export default function PatientsPage() {
       </div>
 
       {patients.length === 0 ? (
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-10 text-center">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-10 text-center">
           <Users className="w-8 h-8 text-slate-600 mx-auto mb-2.5" />
           <p className="text-slate-300 font-medium text-xs">No patients found</p>
           <p className="text-slate-500 text-[11px] mt-0.5">
@@ -89,7 +89,7 @@ export default function PatientsPage() {
             )[0];
 
             return (
-              <div key={patient.id} className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col justify-between">
+              <div key={patient.id} className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-start gap-3 mb-3.5">
                     <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-semibold shrink-0">

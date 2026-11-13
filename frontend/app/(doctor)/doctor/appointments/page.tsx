@@ -12,6 +12,7 @@ import {
   Search,
   XCircle,
   Video,
+  ShieldAlert,
 } from 'lucide-react';
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -40,6 +41,7 @@ function cleanPatientName(email: string) {
 export default function AppointmentsPage() {
   const router = useRouter();
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -47,12 +49,24 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     if (getUserRole() !== 'DOCTOR') { router.push('/login'); return; }
-    api.get('/appointments/mine')
-      .then(res => setAppointments(res.data.data || []))
+    Promise.allSettled([
+      api.get('/appointments/mine'),
+      api.get('/doctors/me/profile'),
+    ])
+      .then(([apptsRes, profileRes]) => {
+        if (apptsRes.status === 'fulfilled') setAppointments(apptsRes.value.data.data || []);
+        if (profileRes.status === 'fulfilled') setDoctorProfile(profileRes.value.data.data);
+      })
       .finally(() => setLoading(false));
   }, [router]);
 
+  const isSuspended = Boolean(doctorProfile?.isSuspended);
+
   const handleComplete = async (id: string) => {
+    if (isSuspended) {
+      alert('Doctor account is currently suspended. You are prohibited from completing consultations.');
+      return;
+    }
     setCompleting(id);
     try {
       await api.patch(`/appointments/${id}/complete`);
@@ -67,6 +81,10 @@ export default function AppointmentsPage() {
   };
 
   const handleCancel = async (id: string) => {
+    if (isSuspended) {
+      alert('Doctor account is currently suspended. Please contact admin regarding existing appointments.');
+      return;
+    }
     if (!confirm('Cancel this appointment?')) return;
     try {
       await api.patch(`/appointments/${id}/cancel`);
@@ -93,17 +111,26 @@ export default function AppointmentsPage() {
   }, {});
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-transparent">
       <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-[#090d16] text-slate-100">
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-transparent text-slate-100">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white tracking-tight">Appointments</h1>
         <p className="text-slate-400 text-xs mt-1">{appointments.length} total recorded patient appointments</p>
       </div>
+
+      {isSuspended && (
+        <div className="flex items-start gap-3 p-4 bg-rose-500/10 border border-rose-500/25 rounded-xl text-rose-200 text-xs mb-6">
+          <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold text-rose-100">Doctor Account Suspended:</span> You are currently prohibited from completing appointments or managing consultations.
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -136,7 +163,7 @@ export default function AppointmentsPage() {
 
       {/* Appointments list */}
       {filtered.length === 0 ? (
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-10 text-center">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-10 text-center">
           <Calendar className="w-8 h-8 text-slate-600 mx-auto mb-2.5" />
           <p className="text-slate-300 font-medium text-xs">No appointments found</p>
           <p className="text-slate-500 text-[11px] mt-0.5">Try adjusting your search query or status filter</p>
@@ -150,7 +177,7 @@ export default function AppointmentsPage() {
             const meetingUrl = appt.videoLink || `https://meet.google.com/doc4u-${appt.id.slice(0, 8)}`;
 
             return (
-              <div key={appt.id} className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 hover:border-slate-700 transition-colors">
+              <div key={appt.id} className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-4 hover:border-slate-700/80 transition-colors">
                 <div className="flex items-start justify-between gap-4 flex-wrap sm:flex-nowrap">
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -206,8 +233,9 @@ export default function AppointmentsPage() {
                         </a>
                         <button
                           onClick={() => handleComplete(appt.id)}
-                          disabled={completing === appt.id}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                          disabled={completing === appt.id || isSuspended}
+                          title={isSuspended ? 'Account suspended' : undefined}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {completing === appt.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckSquare className="w-3.5 h-3.5" />}
                           Complete

@@ -87,13 +87,13 @@ export default function SettingsPage() {
   };
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-transparent">
       <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-[#090d16] text-slate-100">
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-transparent text-slate-100">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white tracking-tight">Account & Profile Settings</h1>
@@ -112,7 +112,7 @@ export default function SettingsPage() {
 
       <div className="max-w-3xl space-y-6">
         {/* Main Settings Card */}
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-6 relative">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-6 relative">
           {/* Practitioner Header */}
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-[#1f293d]">
             <div className="w-14 h-14 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-semibold shrink-0">

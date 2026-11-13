@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   FileText,
   ExternalLink,
+  ShieldAlert,
 } from 'lucide-react';
 
 function cleanPatientName(email: string) {
@@ -23,6 +24,7 @@ function cleanPatientName(email: string) {
 export default function PrescriptionsPage() {
   const router = useRouter();
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -33,16 +35,28 @@ export default function PrescriptionsPage() {
 
   useEffect(() => {
     if (getUserRole() !== 'DOCTOR') { router.push('/login'); return; }
-    api.get('/appointments/mine')
-      .then(res => setAppointments(res.data.data || []))
+    Promise.allSettled([
+      api.get('/appointments/mine'),
+      api.get('/doctors/me/profile'),
+    ])
+      .then(([apptsRes, profileRes]) => {
+        if (apptsRes.status === 'fulfilled') setAppointments(apptsRes.value.data.data || []);
+        if (profileRes.status === 'fulfilled') setDoctorProfile(profileRes.value.data.data);
+      })
       .finally(() => setLoading(false));
   }, [router]);
+
+  const isSuspended = Boolean(doctorProfile?.isSuspended);
 
   // All appointments that have prescriptions or are completed
   const eligibleAppts = appointments.filter(a => a.status === 'COMPLETED' || (a.prescriptions && a.prescriptions.length > 0) || a.status === 'CONFIRMED');
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSuspended) {
+      setError('Doctor account is currently suspended. You are prohibited from issuing prescriptions.');
+      return;
+    }
     if (!fileRef.current?.files?.[0]) {
       setError('Please select a file to upload');
       return;
@@ -77,26 +91,35 @@ export default function PrescriptionsPage() {
   });
 
   if (loading) return (
-    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+    <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-transparent">
       <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-[#090d16] text-slate-100">
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-transparent text-slate-100">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-white tracking-tight">Prescriptions management</h1>
         <p className="text-slate-400 text-xs mt-1">Upload and review digital prescriptions issued to patients</p>
       </div>
 
       {/* Upload Form */}
-      <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-5 mb-6">
+      <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-5 mb-6">
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#1f293d]">
           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
             <Upload className="w-3.5 h-3.5" />
           </div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Issue digital prescription (Rx)</h2>
         </div>
+
+        {isSuspended && (
+          <div className="flex items-start gap-3 p-3.5 bg-rose-500/10 border border-rose-500/25 rounded-lg text-rose-200 text-xs mb-4">
+            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-rose-100 font-semibold">Account Suspended:</strong> You cannot issue or upload prescriptions while your account is suspended.
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="flex items-start gap-2.5 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 text-xs font-medium mb-4">
@@ -119,9 +142,10 @@ export default function PrescriptionsPage() {
             </label>
             <select
               required
+              disabled={isSuspended}
               value={form.appointmentId}
               onChange={e => setForm({ ...form, appointmentId: e.target.value })}
-              className="w-full py-2 px-3 rounded-lg text-xs outline-none bg-[#090d16] border border-[#1f293d] text-white focus:border-emerald-500 transition-colors"
+              className="w-full py-2 px-3 rounded-lg text-xs outline-none bg-[#090d16] border border-[#1f293d] text-white focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <option value="">Choose appointment</option>
               {appointments.slice(0, 20).map((a: any) => (
@@ -138,10 +162,11 @@ export default function PrescriptionsPage() {
             </label>
             <input
               type="text"
+              disabled={isSuspended}
               placeholder="e.g. Mild hypertension, stage 1"
               value={form.diagnosis}
               onChange={e => setForm({ ...form, diagnosis: e.target.value })}
-              className="w-full py-2 px-3 rounded-lg text-xs outline-none bg-[#090d16] border border-[#1f293d] text-white focus:border-emerald-500 transition-colors placeholder:text-slate-500"
+              className="w-full py-2 px-3 rounded-lg text-xs outline-none bg-[#090d16] border border-[#1f293d] text-white focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors placeholder:text-slate-500"
             />
           </div>
 
@@ -152,17 +177,19 @@ export default function PrescriptionsPage() {
             <input
               type="file"
               required
+              disabled={isSuspended}
               ref={fileRef}
               accept=".pdf,image/*"
-              className="w-full text-xs text-slate-400 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 transition-colors cursor-pointer"
+              className="w-full text-xs text-slate-400 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
             />
           </div>
 
           <div className="sm:col-span-3 flex justify-end pt-1">
             <button
               type="submit"
-              disabled={uploading}
-              className="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              disabled={uploading || isSuspended}
+              title={isSuspended ? 'Account suspended' : undefined}
+              className="py-2 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
               Upload prescription
@@ -188,7 +215,7 @@ export default function PrescriptionsPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-10 text-center">
+          <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-10 text-center">
             <FileText className="w-8 h-8 text-slate-600 mx-auto mb-2.5" />
             <p className="text-slate-300 text-xs font-medium">No prescription records found</p>
           </div>
@@ -199,7 +226,7 @@ export default function PrescriptionsPage() {
               const pCount = appt.prescriptions?.length || 0;
 
               return (
-                <div key={appt.id} className="bg-[#111827] border border-[#1f293d] rounded-xl p-3.5 flex items-center justify-between gap-4">
+                <div key={appt.id} className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-3.5 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-semibold shrink-0">
                       <FileText className="w-4 h-4" />

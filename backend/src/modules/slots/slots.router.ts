@@ -8,5 +8,6 @@ export const slotsRouter = Router();
 // Doctor only
 slotsRouter.post('/', authenticate, authorize('DOCTOR'), SlotController.createSlots);
 slotsRouter.get('/my-slots', authenticate, authorize('DOCTOR'), SlotController.getMySlots);
+slotsRouter.post('/reopen', authenticate, authorize('DOCTOR'), SlotController.reopenSlot);
 slotsRouter.post('/block-date', authenticate, authorize('DOCTOR'), SlotController.blockDate);
 slotsRouter.delete('/:id', authenticate, authorize('DOCTOR'), SlotController.deleteSlot);

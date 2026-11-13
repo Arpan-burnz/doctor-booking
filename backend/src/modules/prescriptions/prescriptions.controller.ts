@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { uploadFile } from '../../lib/storage';
 import { prisma } from '../../config/db';
+import { isDoctorSuspended } from '../../lib/suspension';
 
 export const uploadPrescription = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -19,6 +20,12 @@ export const uploadPrescription = async (req: Request, res: Response, next: Next
     const doctor = await prisma.doctor.findUnique({ where: { userId } });
     if (!doctor) {
       res.status(404).json({ error: 'Doctor profile not found' });
+      return;
+    }
+
+    const suspended = await isDoctorSuspended({ doctorId: doctor.id });
+    if (suspended) {
+      res.status(403).json({ error: 'Your doctor account is currently suspended by an administrator. You cannot issue prescriptions.' });
       return;
     }
 

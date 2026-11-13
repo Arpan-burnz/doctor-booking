@@ -46,6 +46,10 @@ export default function BookAppointment() {
   }, [id, router]);
 
   const handleBook = async () => {
+    if (doctor?.isSuspended) {
+      setError('This doctor is currently suspended and cannot accept appointments.');
+      return;
+    }
     if (!selectedSlot) {
       setError('Please select an availability time slot');
       return;
@@ -130,6 +134,18 @@ export default function BookAppointment() {
       </nav>
 
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8">
+        {doctor?.isSuspended && (
+          <div className="bg-rose-500/10 border border-rose-500/25 rounded-xl p-4 flex items-start gap-3 text-xs text-rose-200 mb-5">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-rose-100">Doctor Currently Unavailable</h3>
+              <p className="mt-0.5 text-rose-200/80 leading-relaxed">
+                This practitioner is currently suspended by administration and is prohibited from accepting new bookings. Please select an alternate physician.
+              </p>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 flex items-start gap-2.5 text-xs text-rose-300 font-medium mb-5">
             <AlertCircle className="w-4 h-4 mt-0.5 text-rose-400 shrink-0" />
@@ -146,12 +162,16 @@ export default function BookAppointment() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h2 className="font-semibold text-sm text-white truncate">{doctorDisplayName}</h2>
-                {doctor.isVerified !== false && (
+                {doctor.isSuspended ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium py-0.5 px-2 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                    Suspended
+                  </span>
+                ) : doctor.isVerified !== false ? (
                   <span className="inline-flex items-center gap-1 text-[11px] font-medium py-0.5 px-2 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                     <ShieldCheck className="w-3 h-3" />
                     Verified practitioner
                   </span>
-                )}
+                ) : null}
               </div>
               <p className="text-xs text-sky-400 mb-1.5 font-medium">
                 {doctor.specialization || 'Medical Specialist'}
@@ -258,7 +278,7 @@ export default function BookAppointment() {
         {/* Action Button */}
         <button
           onClick={handleBook}
-          disabled={booking || !selectedSlot}
+          disabled={booking || !selectedSlot || Boolean(doctor?.isSuspended)}
           className="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-400 text-slate-950 font-medium rounded-lg text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {booking ? (

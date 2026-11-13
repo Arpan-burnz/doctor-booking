@@ -522,7 +522,7 @@ export default function PatientDashboard() {
                   : 'Recent';
                 const fileUrl = doc.fileUrl?.startsWith('http')
                   ? doc.fileUrl
-                  : `http://localhost:5000${doc.fileUrl}`;
+                  : (doc.fileUrl || '#');
                 return (
                   <div
                     key={doc.id || idx}
