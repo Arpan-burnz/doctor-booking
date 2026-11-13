@@ -156,7 +156,7 @@ export default function LandingPage() {
       className="min-h-screen w-full bg-transparent text-slate-100 font-sans antialiased selection:bg-purple-900/40 selection:text-purple-200"
     >
       {/* Navigation Bar: Quiet Chrome */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1f293d]/80 px-6 py-4 md:px-12 flex items-center justify-between bg-[#090d16]/80 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] px-6 py-4 md:px-12 flex items-center justify-between bg-[#090d16]/60 backdrop-blur-md">
         <AppLogo isDark={true} onClick={() => scrollToSection(0)} />
 
         {/* Desktop Nav Links */}
@@ -245,12 +245,12 @@ export default function LandingPage() {
       {/* Hero Section: Asymmetric Split on Calm Obsidian Canvas */}
       <section
         id="hero"
-        className="min-h-[88vh] w-full flex flex-col justify-center items-center pt-28 pb-16 px-6 md:px-12"
+        className="min-h-[88vh] w-full flex flex-col justify-center items-center pt-28 pb-16 px-6 md:px-12 bg-transparent"
       >
         <div className="max-w-6xl mx-auto grid lg:grid-cols-12 gap-12 items-center w-full">
           {/* Left Column: Direct, plain headline & specific description */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827] border border-[#1f293d] text-[11px] text-slate-300 mb-6 font-medium">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111827]/60 backdrop-blur-md border border-white/[0.08] text-[11px] text-slate-300 mb-6 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
               <span>Verified doctor scheduling platform</span>
             </div>
@@ -275,7 +275,7 @@ export default function LandingPage() {
               <MagneticButton
                 as="button"
                 onClick={() => router.push('/register')}
-                className="px-5 py-2.5 border border-[#1f293d] bg-[#111827] hover:bg-[#162032] text-slate-300 hover:text-white font-medium text-xs rounded-lg transition-colors cursor-pointer"
+                className="px-5 py-2.5 border border-white/[0.08] bg-[#111827]/60 backdrop-blur-md hover:bg-[#162032] text-slate-300 hover:text-white font-medium text-xs rounded-lg transition-colors cursor-pointer"
               >
                 Join as a doctor
               </MagneticButton>
@@ -284,9 +284,9 @@ export default function LandingPage() {
 
           {/* Right Column: Grounded Clinical UI Preview (Real product context, no floating tilt) */}
           <div className="lg:col-span-5 w-full">
-            <div className="w-full rounded-2xl bg-[#111827]/85 backdrop-blur-md border border-[#1f293d]/80 p-6 shadow-2xl relative">
+            <div className="w-full rounded-2xl bg-[#111827]/60 backdrop-blur-xl border border-white/[0.08] p-6 shadow-2xl relative">
               {/* Card Header */}
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#1f293d]">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.08]">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
                   <Calendar className="w-4 h-4 text-sky-400" />
                   <span>Scheduled consultation</span>
@@ -297,8 +297,8 @@ export default function LandingPage() {
               </div>
 
               {/* Doctor Details */}
-              <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#162032] border border-[#1f293d] mb-4">
-                <div className="w-10 h-10 rounded-xl bg-[#090d16] border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-xs shrink-0">
+              <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#162032]/70 border border-white/[0.06] mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#090d16]/80 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-xs shrink-0">
                   SJ
                 </div>
                 <div className="flex-1 min-w-0">
@@ -309,11 +309,11 @@ export default function LandingPage() {
 
               {/* Slot Meta Grid */}
               <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
-                <div className="p-3 rounded-xl bg-[#0d121f] border border-[#1f293d]">
+                <div className="p-3 rounded-xl bg-[#0d121f]/70 border border-white/[0.06]">
                   <p className="text-[11px] text-slate-400 mb-0.5">Date and time</p>
                   <p className="font-semibold text-slate-200 tabular-nums">Thursday, 10:30 AM</p>
                 </div>
-                <div className="p-3 rounded-xl bg-[#0d121f] border border-[#1f293d]">
+                <div className="p-3 rounded-xl bg-[#0d121f]/70 border border-white/[0.06]">
                   <p className="text-[11px] text-slate-400 mb-0.5">Consultation fee</p>
                   <p className="font-semibold text-emerald-400 tabular-nums">₹800</p>
                 </div>
@@ -335,7 +335,7 @@ export default function LandingPage() {
       {/* Section 2: How It Works */}
       <section
         id="how"
-        className="w-full py-24 px-6 md:px-12 bg-[#090d16]/70 backdrop-blur-[2px] border-t border-[#1f293d]/80"
+        className="w-full py-24 px-6 md:px-12 bg-transparent border-t border-white/[0.06]"
       >
         <div className="max-w-5xl mx-auto w-full">
           <div className="max-w-xl mb-12">
@@ -364,7 +364,7 @@ export default function LandingPage() {
             ].map((s) => (
               <div
                 key={s.step}
-                className="gsap-how-card border border-[#1f293d]/80 bg-[#111827]/85 backdrop-blur-md rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition-colors"
+                className="gsap-how-card border border-white/[0.08] bg-[#111827]/60 backdrop-blur-xl rounded-2xl p-6 flex flex-col justify-between hover:border-sky-500/30 hover:bg-[#111827]/75 transition-all shadow-xl shadow-black/20"
               >
                 <div>
                   <span className="text-xs font-mono font-semibold text-slate-500 block mb-4">Step {s.step}</span>
@@ -380,7 +380,7 @@ export default function LandingPage() {
       {/* Section 3: Core Features */}
       <section
         id="features"
-        className="w-full py-24 px-6 md:px-12 border-t border-[#1f293d]/80 bg-[#090d16]/75 backdrop-blur-[2px]"
+        className="w-full py-24 px-6 md:px-12 border-t border-white/[0.06] bg-transparent"
       >
         <div className="max-w-5xl mx-auto w-full">
           <div className="max-w-xl mb-12">
@@ -398,9 +398,9 @@ export default function LandingPage() {
             ].map((f) => (
               <div
                 key={f.title}
-                className="gsap-feature-card border border-[#1f293d]/80 bg-[#111827]/85 backdrop-blur-md rounded-2xl p-5 hover:border-slate-700 transition-colors"
+                className="gsap-feature-card border border-white/[0.08] bg-[#111827]/60 backdrop-blur-xl rounded-2xl p-5 hover:border-sky-500/30 hover:bg-[#111827]/75 transition-all shadow-xl shadow-black/20"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3.5 bg-[#162032] border border-[#1f293d]">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3.5 bg-[#162032]/70 border border-white/[0.06]">
                   {f.icon}
                 </div>
                 <h3 className="font-semibold text-xs mb-1.5 text-white">{f.title}</h3>
@@ -414,7 +414,7 @@ export default function LandingPage() {
       {/* Section 4: For Doctors */}
       <section
         id="doctors"
-        className="w-full py-24 px-6 md:px-12 bg-[#090d16]/70 backdrop-blur-[2px] border-t border-[#1f293d]/80"
+        className="w-full py-24 px-6 md:px-12 bg-transparent border-t border-white/[0.06]"
       >
         <div className="max-w-5xl mx-auto grid md:grid-cols-12 gap-10 items-center w-full">
           <div className="gsap-doctor-info md:col-span-7">
@@ -453,8 +453,8 @@ export default function LandingPage() {
           </div>
 
           {/* Right Column: Practitioner schedule tile */}
-          <div className="gsap-doctor-card md:col-span-5 w-full rounded-2xl p-6 border border-[#1f293d]/80 bg-[#111827]/85 backdrop-blur-md">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#1f293d]">
+          <div className="gsap-doctor-card md:col-span-5 w-full rounded-2xl p-6 border border-white/[0.08] bg-[#111827]/60 backdrop-blur-xl shadow-2xl shadow-black/30">
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.08]">
               <div>
                 <p className="text-xs font-semibold text-white">Practitioner Overview</p>
                 <p className="text-[11px] text-slate-400">Active consultation schedule</p>
@@ -470,7 +470,7 @@ export default function LandingPage() {
                 { time: '11:30 AM', name: 'Emily Davis', type: 'Follow-up Review', fee: '₹800' },
                 { time: '02:15 PM', name: 'Michael Vance', type: 'Diagnostics Discussion', fee: '₹800' },
               ].map(item => (
-                <div key={item.time} className="p-3 rounded-xl bg-[#162032] border border-[#1f293d] flex items-center justify-between">
+                <div key={item.time} className="p-3 rounded-xl bg-[#162032]/70 border border-white/[0.06] flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-white text-xs">{item.name}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">{item.type} • {item.time}</p>
@@ -486,7 +486,7 @@ export default function LandingPage() {
       {/* Section 5: Call to Action & Footer */}
       <section
         id="cta"
-        className="w-full py-20 px-6 md:px-12 bg-[#090d16]/80 backdrop-blur-[2px] border-t border-[#1f293d]/80"
+        className="w-full py-20 px-6 md:px-12 bg-transparent border-t border-white/[0.06]"
       >
         <div className="gsap-cta-content max-w-2xl mx-auto text-center w-full">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">
@@ -507,7 +507,7 @@ export default function LandingPage() {
             <MagneticButton
               as="button"
               onClick={() => router.push('/login')}
-              className="w-full sm:w-auto px-5 py-2.5 bg-[#111827] border border-[#1f293d] hover:bg-[#162032] text-xs font-medium rounded-lg cursor-pointer text-slate-300 hover:text-white transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#111827]/60 backdrop-blur-md border border-white/[0.08] hover:bg-[#162032] text-xs font-medium rounded-lg cursor-pointer text-slate-300 hover:text-white transition-colors"
             >
               Sign in
             </MagneticButton>
@@ -515,7 +515,7 @@ export default function LandingPage() {
         </div>
 
         {/* Quiet Footer */}
-        <footer className="border-t border-[#1f293d] pt-8 mt-16 text-slate-500 w-full max-w-5xl mx-auto">
+        <footer className="border-t border-white/[0.06] pt-8 mt-16 text-slate-500 w-full max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
             <AppLogo isDark={true} onClick={() => scrollToSection(0)} />
             <p className="text-slate-500">

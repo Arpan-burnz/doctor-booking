@@ -126,6 +126,7 @@ export default function DoctorDashboard() {
 
   // Doctor Name calculation strictly from database profile: default is email ID
   const isVerified = doctorProfile?.isVerified ?? false;
+  const isSuspended = Boolean(doctorProfile?.isSuspended);
   const doctorDisplayName = doctorProfile?.name?.trim() ? doctorProfile.name : (email || 'Doctor');
 
   // Filter Today's appointments strictly from database
@@ -167,6 +168,10 @@ export default function DoctorDashboard() {
 
   // Handlers
   const handleOpenAddSlots = () => {
+    if (isSuspended) {
+      alert('Doctor account is currently suspended. You cannot add slots.');
+      return;
+    }
     if (!isVerified) {
       alert('wait untill u get verified');
       return;
@@ -176,6 +181,10 @@ export default function DoctorDashboard() {
 
   const handleCreateSlots = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSuspended) {
+      setModalError('Doctor account is suspended. Adding slots prohibited.');
+      return;
+    }
     if (!isVerified) {
       setModalError('wait untill u get verified');
       return;
@@ -229,6 +238,10 @@ export default function DoctorDashboard() {
 
   const handleBlockDate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSuspended) {
+      setModalError('Doctor account is currently suspended. Blocking dates prohibited.');
+      return;
+    }
     if (!isVerified) {
       setModalError('wait untill u get verified');
       return;
@@ -258,6 +271,10 @@ export default function DoctorDashboard() {
 
   const handleUploadRx = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSuspended) {
+      setModalError('Doctor account is currently suspended. Prescription issuing prohibited.');
+      return;
+    }
     if (!rxFileRef.current?.files?.[0]) {
       setModalError('Please select a file to upload');
       return;
@@ -294,6 +311,10 @@ export default function DoctorDashboard() {
   };
 
   const handleCompleteSession = async (apptId: string) => {
+    if (isSuspended) {
+      setModalError('Doctor account is currently suspended. Completing sessions prohibited.');
+      return;
+    }
     setModalLoading(true);
     try {
       await api.patch(`/appointments/${apptId}/complete`);
@@ -312,7 +333,7 @@ export default function DoctorDashboard() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-[#090d16]">
+      <div className="flex-1 flex items-center justify-center min-h-[80vh] bg-transparent">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
           <p className="text-slate-400 text-xs">Loading doctor portal</p>
@@ -322,9 +343,22 @@ export default function DoctorDashboard() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-[#090d16] text-slate-100">
-      {/* Pending verification alert banner */}
-      {!isVerified && (
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-full bg-transparent text-slate-100">
+      {/* Account Suspended Alert Banner */}
+      {isSuspended ? (
+        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <div>
+              <p className="font-semibold text-rose-100">Practitioner Account Suspended</p>
+              <p className="text-rose-200/80 mt-0.5">Your doctor account has been suspended by an administrator. You are prohibited from managing slots, blocking dates, and issuing prescriptions.</p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 font-medium text-[11px] whitespace-nowrap">
+            Suspended
+          </span>
+        </div>
+      ) : !isVerified ? (
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
@@ -337,7 +371,7 @@ export default function DoctorDashboard() {
             Pending review
           </span>
         </div>
-      )}
+      ) : null}
 
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-7">
@@ -356,30 +390,33 @@ export default function DoctorDashboard() {
         <div className="flex items-center gap-2.5 relative">
           <button
             onClick={handleOpenAddSlots}
-            className={`flex items-center gap-2 px-3.5 py-2 border rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              !isVerified
-                ? 'bg-[#111827] border-amber-500/30 text-amber-300 hover:border-amber-500'
-                : 'bg-[#111827] hover:bg-[#162032] border-[#1f293d] hover:border-slate-600 text-white'
+            disabled={isSuspended}
+            className={`flex items-center gap-2 px-3.5 py-2 border rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              isSuspended
+                ? 'bg-[#111827]/70 backdrop-blur-sm border-rose-500/30 text-rose-300'
+                : !isVerified
+                  ? 'bg-[#111827]/70 backdrop-blur-sm border-amber-500/30 text-amber-300 hover:border-amber-500'
+                  : 'bg-[#111827]/70 hover:bg-[#162032] backdrop-blur-sm border-[#1f293d] hover:border-slate-600 text-white'
             }`}
-            title={!isVerified ? 'wait untill u get verified' : 'Add availability slots'}
+            title={isSuspended ? 'Account suspended' : !isVerified ? 'wait untill u get verified' : 'Add availability slots'}
           >
             <Plus className="w-3.5 h-3.5 text-emerald-400" />
             <span>Add slots</span>
-            {!isVerified && <Lock className="w-3.5 h-3.5 text-amber-400 ml-0.5" />}
+            {(isSuspended || !isVerified) && <Lock className="w-3.5 h-3.5 text-amber-400 ml-0.5" />}
           </button>
 
           {/* Three dots button */}
           <div className="relative">
             <button
               onClick={() => setShowMenuDropdown(!showMenuDropdown)}
-              className="p-2 bg-[#111827] hover:bg-[#162032] border border-[#1f293d] hover:border-slate-600 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
+              className="p-2 bg-[#111827]/70 hover:bg-[#162032] backdrop-blur-sm border border-[#1f293d] hover:border-slate-600 text-slate-300 hover:text-white rounded-lg transition-colors cursor-pointer"
               title="More options"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
 
             {showMenuDropdown && (
-              <div className="absolute right-0 top-11 w-52 bg-[#162032] border border-[#1f293d] rounded-xl shadow-lg p-1.5 z-40">
+              <div className="absolute right-0 top-11 w-52 bg-[#162032]/85 backdrop-blur-xl border border-[#1f293d] rounded-xl shadow-lg p-1.5 z-40">
                 <button
                   onClick={() => { setShowMenuDropdown(false); loadData(true); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
@@ -417,7 +454,7 @@ export default function DoctorDashboard() {
       {/* Row of 4 Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {/* Card 1: Today */}
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-colors">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-4 flex flex-col justify-between hover:bg-[#111827]/80 hover:border-slate-700/80 transition-all">
           <div>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Calendar className="w-4 h-4" />
@@ -432,7 +469,7 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Card 2: Upcoming this week */}
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-colors">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-4 flex flex-col justify-between hover:bg-[#111827]/80 hover:border-slate-700/80 transition-all">
           <div>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <CalendarDays className="w-4 h-4" />
@@ -447,7 +484,7 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Card 3: Total patients */}
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-colors">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-4 flex flex-col justify-between hover:bg-[#111827]/80 hover:border-slate-700/80 transition-all">
           <div>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Users className="w-4 h-4" />
@@ -462,7 +499,7 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Card 4: Rating */}
-        <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-4 flex flex-col justify-between hover:border-slate-700 transition-colors">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-4 flex flex-col justify-between hover:bg-[#111827]/80 hover:border-slate-700/80 transition-all">
           <div>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Star className="w-4 h-4" />
@@ -480,7 +517,7 @@ export default function DoctorDashboard() {
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* Left Column: Today's Schedule */}
-        <div className="lg:col-span-7 bg-[#111827] border border-[#1f293d] rounded-xl p-5">
+        <div className="lg:col-span-7 bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1f293d]">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Today&apos;s schedule
@@ -576,7 +613,7 @@ export default function DoctorDashboard() {
         {/* Right Column: Quick actions & Latest reviews */}
         <div className="lg:col-span-5 space-y-5">
           {/* Card 1: Quick Actions */}
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-5">
+          <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-5">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3.5">
               Quick actions
             </h2>
@@ -585,7 +622,7 @@ export default function DoctorDashboard() {
               {/* 1. Add slots */}
               <button
                 onClick={handleOpenAddSlots}
-                className="border border-[#1f293d] hover:border-slate-600 bg-[#162032] hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
+                className="border border-[#1f293d]/80 hover:border-slate-600 bg-[#162032]/70 hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
               >
                 <div className="text-emerald-400 flex items-center justify-between w-full">
                   <Clock className="w-4 h-4" />
@@ -599,7 +636,7 @@ export default function DoctorDashboard() {
               {/* 2. Upload Rx */}
               <button
                 onClick={() => setShowUploadRxModal(true)}
-                className="border border-[#1f293d] hover:border-slate-600 bg-[#162032] hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
+                className="border border-[#1f293d]/80 hover:border-slate-600 bg-[#162032]/70 hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
               >
                 <div className="text-emerald-400">
                   <Upload className="w-4 h-4" />
@@ -612,7 +649,7 @@ export default function DoctorDashboard() {
               {/* 3. Find patient */}
               <button
                 onClick={() => router.push('/doctor/patients')}
-                className="border border-[#1f293d] hover:border-slate-600 bg-[#162032] hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
+                className="border border-[#1f293d]/80 hover:border-slate-600 bg-[#162032]/70 hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
               >
                 <div className="text-emerald-400">
                   <Search className="w-4 h-4" />
@@ -631,7 +668,7 @@ export default function DoctorDashboard() {
                   }
                   setShowBlockDateModal(true);
                 }}
-                className="border border-[#1f293d] hover:border-slate-600 bg-[#162032] hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
+                className="border border-[#1f293d]/80 hover:border-slate-600 bg-[#162032]/70 hover:bg-[#1a263c] p-3.5 rounded-lg transition-colors flex flex-col justify-between items-start text-left cursor-pointer"
               >
                 <div className="text-emerald-400 flex items-center justify-between w-full">
                   <CalendarX className="w-4 h-4" />
@@ -645,7 +682,7 @@ export default function DoctorDashboard() {
           </div>
 
           {/* Card 2: Latest Reviews */}
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl p-5">
+          <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1f293d]/60 rounded-xl p-5">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3.5">
               Latest reviews
             </h2>
@@ -688,8 +725,8 @@ export default function DoctorDashboard() {
 
       {/* MODAL 1: ADD SLOTS */}
       {showAddSlotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl w-full max-w-md p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827]/90 backdrop-blur-xl border border-[#1f293d]/80 rounded-xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 relative">
             <button
               onClick={() => { setShowAddSlotModal(false); setModalError(''); setModalSuccess(''); }}
               className="absolute top-5 right-5 text-slate-400 hover:text-white cursor-pointer"
@@ -806,8 +843,8 @@ export default function DoctorDashboard() {
 
       {/* MODAL 2: BLOCK A DATE */}
       {showBlockDateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl w-full max-w-md p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827]/90 backdrop-blur-xl border border-[#1f293d]/80 rounded-xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 relative">
             <button
               onClick={() => { setShowBlockDateModal(false); setModalError(''); setModalSuccess(''); }}
               className="absolute top-5 right-5 text-slate-400 hover:text-white cursor-pointer"
@@ -886,8 +923,8 @@ export default function DoctorDashboard() {
 
       {/* MODAL 3: UPLOAD RX */}
       {showUploadRxModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl w-full max-w-md p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827]/90 backdrop-blur-xl border border-[#1f293d]/80 rounded-xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 relative">
             <button
               onClick={() => { setShowUploadRxModal(false); setModalError(''); setModalSuccess(''); }}
               className="absolute top-5 right-5 text-slate-400 hover:text-white cursor-pointer"
@@ -983,8 +1020,8 @@ export default function DoctorDashboard() {
 
       {/* MODAL 4: START CONSULTATION */}
       {showStartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
-          <div className="bg-[#111827] border border-[#1f293d] rounded-xl w-full max-w-md p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#111827]/90 backdrop-blur-xl border border-[#1f293d]/80 rounded-xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-6 relative">
             <button
               onClick={() => { setShowStartModal(null); setModalError(''); setModalSuccess(''); }}
               className="absolute top-5 right-5 text-slate-400 hover:text-white cursor-pointer"

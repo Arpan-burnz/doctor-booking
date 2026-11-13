@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import {
   Stethoscope,
@@ -11,6 +12,10 @@ import {
   Search,
   User as UserIcon,
   Loader2,
+  FileText,
+  ExternalLink,
+  ShieldCheck,
+  Eye,
 } from 'lucide-react';
 
 export default function AdminDoctors() {
@@ -23,6 +28,7 @@ export default function AdminDoctors() {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewingCertId, setViewingCertId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -38,6 +44,23 @@ export default function AdminDoctors() {
       setLoading(false);
     }).catch(console.error);
   }, []);
+
+  const handleViewCertificate = async (doctorId: string) => {
+    try {
+      setViewingCertId(doctorId);
+      const res = await api.get(`/admin/doctors/${doctorId}/certificate`, {
+        responseType: 'blob',
+      });
+      const contentType = (res.headers['content-type'] as string) || 'application/pdf';
+      const blob = new Blob([res.data], { type: contentType });
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to open certificate file.');
+    } finally {
+      setViewingCertId(null);
+    }
+  };
 
   const handleVerify = async (id: string) => {
     try {
@@ -206,6 +229,7 @@ export default function AdminDoctors() {
               <tr>
                 <th className="px-5 py-3 font-medium">Doctor</th>
                 <th className="px-5 py-3 font-medium">Specialization</th>
+                <th className="px-5 py-3 font-medium">Verification & License</th>
                 <th className="px-5 py-3 font-medium">Patients</th>
                 <th className="px-5 py-3 font-medium">Rating</th>
                 <th className="px-5 py-3 font-medium">Fee</th>
@@ -226,13 +250,55 @@ export default function AdminDoctors() {
                         <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center shrink-0">
                           <UserIcon className="w-3.5 h-3.5" />
                         </div>
-                        <div className="font-medium text-white truncate max-w-[150px]">
-                          {doctor.name ? doctor.name : (doctor.email || 'Doctor')}
+                        <div className="min-w-0">
+                          <Link
+                            href={`/admin/doctors/${doctor.id}`}
+                            className="font-medium text-white hover:text-violet-300 transition-colors truncate max-w-[150px] block"
+                            title="View full doctor profile"
+                          >
+                            {doctor.name ? doctor.name : (doctor.email || 'Doctor')}
+                          </Link>
+                          {doctor.email && (
+                            <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                              {doctor.email}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-5 py-3 text-slate-300">
                       {doctor.specialization}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-white font-medium flex items-center gap-1.5">
+                          <span className="text-slate-400 text-[10px] uppercase font-semibold">Reg:</span>
+                          <span className="tabular-nums">{doctor.licenseNumber || '—'}</span>
+                        </div>
+                        {doctor.medicalCouncil && (
+                          <div className="text-slate-400 text-[11px] truncate max-w-[180px]" title={doctor.medicalCouncil}>
+                            {doctor.medicalCouncil}
+                          </div>
+                        )}
+                        {doctor.certificateUrl ? (
+                          <button
+                            onClick={() => handleViewCertificate(doctor.id)}
+                            disabled={viewingCertId === doctor.id}
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-[11px] font-medium transition-colors cursor-pointer w-fit disabled:opacity-50"
+                            title="Securely view uploaded registration certificate"
+                          >
+                            {viewingCertId === doctor.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <FileText className="w-3 h-3" />
+                            )}
+                            <span>Certificate</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-slate-500 italic">No file</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-slate-400 tabular-nums">
                       {isVerified ? doctor.patientsCount || 0 : '—'}
@@ -268,7 +334,15 @@ export default function AdminDoctors() {
                       )}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2.5 text-xs font-medium">
+                      <div className="flex items-center justify-end gap-2 text-xs font-medium">
+                        <Link
+                          href={`/admin/doctors/${doctor.id}`}
+                          className="px-2 py-1 rounded bg-[#162032] hover:bg-[#1f293d] border border-[#1f293d] text-slate-300 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5 text-[11px]"
+                          title="View doctor full profile"
+                        >
+                          <Eye className="w-3 h-3 text-violet-400" />
+                          <span>Profile</span>
+                        </Link>
                         {isVerified && (
                           <button onClick={() => handleSuspend(doctor.id)} className="text-rose-400 hover:text-rose-300 transition-colors cursor-pointer">
                             Suspend
@@ -294,7 +368,7 @@ export default function AdminDoctors() {
               })}
               {filteredDoctors.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-6 text-center text-slate-500">
+                  <td colSpan={8} className="px-5 py-6 text-center text-slate-500">
                     No doctors found matching your search
                   </td>
                 </tr>

@@ -75,6 +75,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     : displayName.split(' ').map((p: string) => p[0]).filter(Boolean).join('').slice(0, 2).toUpperCase() || 'DR';
   const specialization = doctorProfile?.specialization || 'Physician';
   const isVerified = doctorProfile?.isVerified ?? false;
+  const isSuspended = Boolean(doctorProfile?.isSuspended);
 
   const handleLogout = () => {
     clearTokens();
@@ -82,7 +83,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#111827]/90 backdrop-blur-md text-slate-100 select-none border-r border-[#1f293d]">
+    <div className="flex flex-col h-full bg-[#111827]/65 backdrop-blur-xl text-slate-100 select-none border-r border-[#1f293d]/50">
       {/* Brand / Logo */}
       <div className="px-5 py-6 border-b border-[#1f293d]/60">
         <Link href="/doctor/dashboard" className="flex items-center gap-3">
@@ -143,11 +144,15 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
             <p className="text-white text-xs font-bold truncate leading-tight">{displayName}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-slate-400 text-[11px] truncate">{specialization}</span>
-              {!isVerified && (
+              {isSuspended ? (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-950/90 text-rose-300 border border-rose-800/80">
+                  Suspended
+                </span>
+              ) : !isVerified ? (
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-950/60 text-amber-400 border border-amber-900/50">
                   Unverified
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
           <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
@@ -155,7 +160,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
         {/* Profile Popover / Dropdown */}
         {profileDropdownOpen && (
-          <div className="absolute bottom-16 left-3 right-3 bg-[#162032] border border-[#1f293d] rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="absolute bottom-16 left-3 right-3 bg-[#162032]/85 backdrop-blur-xl border border-[#1f293d]/60 rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
             <Link
               href="/doctor/settings"
               onClick={() => { setProfileDropdownOpen(false); setSidebarOpen(false); }}
@@ -178,9 +183,9 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   );
 
   return (
-    <div className="flex h-screen bg-[#090d16] text-slate-100 overflow-hidden font-sans antialiased">
+    <div className="flex h-screen bg-transparent text-slate-100 overflow-hidden font-sans antialiased">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col flex-shrink-0 bg-[#111827]">
+      <aside className="hidden md:flex w-64 flex-col flex-shrink-0 bg-[#111827]/65 backdrop-blur-xl">
         <SidebarContent />
       </aside>
 
@@ -191,7 +196,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
             className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="relative z-10 w-64 bg-[#111827] flex flex-col h-full shadow-2xl">
+          <aside className="relative z-10 w-64 bg-[#111827]/80 backdrop-blur-xl border-r border-[#1f293d]/50 flex flex-col h-full shadow-2xl">
             <button
               onClick={() => setSidebarOpen(false)}
               className="absolute top-5 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
@@ -206,7 +211,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
       {/* Main Container */}
       <div className="flex-1 flex flex-col overflow-hidden bg-transparent">
         {/* Mobile topbar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-[#111827]/90 backdrop-blur-md border-b border-[#1f293d]">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-[#111827]/65 backdrop-blur-xl border-b border-[#1f293d]/50">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
@@ -223,6 +228,16 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
             {initials}
           </div>
         </header>
+
+        {/* Global Suspended Warning Banner */}
+        {isSuspended && (
+          <div className="bg-rose-950/90 border-b border-rose-500/40 px-5 py-3 flex items-center gap-3 text-xs text-rose-200 shrink-0">
+            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+            <div className="leading-relaxed">
+              <strong className="text-rose-100 font-bold">Account Suspended:</strong> Your practitioner account has been suspended by an administrator. You are prohibited from managing slots, creating prescriptions, and accepting patient appointments.
+            </div>
+          </div>
+        )}
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-transparent">

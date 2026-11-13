@@ -1,8 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/lib/theme';
 import SilkShaderBackground from '@/components/SilkShaderBackground';
 import SmoothScroll from '@/components/SmoothScroll';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#02010a',
+};
 
 export const metadata: Metadata = {
   title: 'DOC4U — Book Doctor Appointments',
