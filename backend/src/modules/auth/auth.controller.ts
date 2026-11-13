@@ -1,12 +1,46 @@
 import type { Request, Response, NextFunction } from 'express';
-import { registerSchema, loginSchema } from './auth.schema';
+import { registerSchema, loginSchema, resendVerificationSchema } from './auth.schema';
 import * as AuthService from './auth.service';
+import { uploadFile } from '../../lib/storage';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = registerSchema.parse(req.body);
+    let certificateUrl: string | undefined;
+    if (req.file) {
+      certificateUrl = await uploadFile(req.file, 'certificates');
+    }
+
+    const payload: any = { ...req.body };
+    if (certificateUrl) {
+      payload.certificateUrl = certificateUrl;
+    }
+    if (typeof payload.termsAccepted === 'string') {
+      payload.termsAccepted = payload.termsAccepted === 'true';
+    }
+
+    const data = registerSchema.parse(payload);
     const user = await AuthService.registerUser(data);
     res.status(201).json({ success: true, data: user });
+  } catch (err) { next(err); }
+};
+
+export const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = (req.query.token as string) || (req.body?.token as string);
+    if (!token) {
+      res.status(400).json({ error: 'Verification token is required' });
+      return;
+    }
+    const result = await AuthService.verifyEmailToken(token);
+    res.json({ success: true, message: result.message });
+  } catch (err) { next(err); }
+};
+
+export const resendVerification = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = resendVerificationSchema.parse(req.body);
+    const result = await AuthService.resendVerificationToken(email);
+    res.json({ success: true, message: result.message });
   } catch (err) { next(err); }
 };
 

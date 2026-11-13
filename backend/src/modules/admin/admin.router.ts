@@ -9,6 +9,8 @@ adminRouter.use(authenticate, authorize('ADMIN'));
 
 adminRouter.get('/stats', AdminController.getStats);
 adminRouter.get('/doctors', AdminController.getAllDoctors);
+adminRouter.get('/doctors/:id', AdminController.getDoctorById);
+adminRouter.get('/doctors/:id/certificate', AdminController.getDoctorCertificate);
 adminRouter.patch('/doctors/:id/verify', AdminController.verifyDoctor);
 adminRouter.delete('/doctors/:id/reject', AdminController.rejectDoctor);
 adminRouter.patch('/doctors/:id/suspend', AdminController.suspendDoctor);

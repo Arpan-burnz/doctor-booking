@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import * as DoctorService from './doctors.service';
 
 export const getAllDoctors = async (req: Request, res: Response, next: NextFunction) => {
@@ -50,7 +51,14 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 export const updateMyProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user.userId;
-    const doctor = await DoctorService.updateDoctorProfile(userId, req.body);
+    const updateProfileSchema = z.object({
+      name: z.string().min(2).max(100).optional(),
+      bio: z.string().max(1000).optional().nullable(),
+      experience: z.number().int().min(0).max(60).optional().nullable(),
+      consultationFee: z.number().int().min(1).max(100000).optional(),
+    });
+    const data = updateProfileSchema.parse(req.body);
+    const doctor = await DoctorService.updateDoctorProfile(userId, data);
     res.json({ success: true, data: doctor });
   } catch (err) { next(err); }
 };

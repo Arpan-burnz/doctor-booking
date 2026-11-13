@@ -14,9 +14,22 @@ export const createSlots = async (req: Request, res: Response, next: NextFunctio
 export const getMySlots = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user.userId;
-    const { date } = req.query as any;
-    const slots = await SlotService.getMySlots(userId, date);
+    const { date, filter } = req.query as any;
+    const slots = await SlotService.getMySlots(userId, date, filter);
     res.json({ success: true, data: slots });
+  } catch (err) { next(err); }
+};
+
+export const reopenSlot = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { slotId, targetDate, startTime, endTime } = req.body;
+    if (!slotId || !targetDate) {
+      res.status(400).json({ success: false, error: 'slotId and targetDate are required' });
+      return;
+    }
+    const newSlot = await SlotService.reopenSlot(userId, slotId, targetDate, startTime, endTime);
+    res.status(201).json({ success: true, data: newSlot, message: 'Slot reopened successfully' });
   } catch (err) { next(err); }
 };
 
