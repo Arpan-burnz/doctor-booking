@@ -2,12 +2,18 @@ import { prisma } from '../../config/db';
 import type { BookAppointmentInput } from './appointments.schema';
 import { sendAppointmentConfirmation, sendCancellationEmail, sendAppointmentReminder } from '../../lib/mailer';
 import { sendBookingConfirmationSMS } from '../../lib/sms';
+import { isDoctorSuspended } from '../../lib/suspension';
 
 export const bookAppointment = async (userId: string, data: BookAppointmentInput) => {
+  const userObj = await prisma.user.findUnique({ where: { id: userId } });
+  if (!userObj) throw new Error('User not found');
+  // Temporarily bypass email verification check for booking
+  // if (!userObj.emailVerified) {
+  //   throw new Error('Please verify your email address before booking an appointment. Check your inbox for the activation link.');
+  // }
+
   let patient = await prisma.patient.findUnique({ where: { userId } });
   if (!patient) {
-    const userObj = await prisma.user.findUnique({ where: { id: userId } });
-    if (!userObj) throw new Error('User not found');
     patient = await prisma.patient.create({ data: { userId } });
   }
 
@@ -31,6 +37,11 @@ export const bookAppointment = async (userId: string, data: BookAppointmentInput
   }
 
   if (slot.doctorId !== data.doctorId) throw new Error('Slot does not belong to this doctor');
+
+  const suspended = await isDoctorSuspended({ doctorId: data.doctorId });
+  if (suspended) {
+    throw new Error('This doctor is currently suspended and cannot accept appointments.');
+  }
 
   // Double booking check: same patient, same doctor, same slot date
   const existingSameDayAppt = await prisma.appointment.findFirst({
@@ -64,7 +75,9 @@ export const bookAppointment = async (userId: string, data: BookAppointmentInput
         include: {
           slot:   true,
           doctor: {
-            include: {
+            select: {
+              name: true,
+              specialization: true,
               user: { select: { email: true } },
             },
           },
@@ -78,7 +91,7 @@ export const bookAppointment = async (userId: string, data: BookAppointmentInput
       if (patientUser) {
         await sendAppointmentConfirmation(patientUser.email, {
           patientName: patientUser.email.split('@')[0],
-          doctorName: `Dr. ${appointment.doctor.specialization}`,
+          doctorName: `Dr. ${appointment.doctor.name || appointment.doctor.user.email.split('@')[0]}`,
           date: appointment.slot.slotDate.toDateString(),
           startTime: appointment.slot.startTime,
           endTime: appointment.slot.endTime,
@@ -86,7 +99,7 @@ export const bookAppointment = async (userId: string, data: BookAppointmentInput
         if (patientUser.phone) {
           await sendBookingConfirmationSMS(
             patientUser.phone,
-            `Dr. ${appointment.doctor.specialization}`,
+            `Dr. ${appointment.doctor.name || appointment.doctor.user.email.split('@')[0]}`,
             appointment.slot.slotDate.toDateString(),
             appointment.slot.startTime
           );
@@ -184,6 +197,20 @@ export const cancelAppointment = async (appointmentId: string, userId: string, r
     }
   }
 
+  // Enforce 2-hour cancellation window for patients/doctors (admin can always cancel)
+  if (role !== 'ADMIN') {
+    const slot = await prisma.availabilitySlot.findUnique({ where: { id: appointment.slotId } });
+    if (slot) {
+      const slotDateTime = new Date(slot.slotDate);
+      const [h, m] = slot.startTime.split(':').map(Number);
+      slotDateTime.setHours(h, m, 0, 0);
+      const cutoff = new Date(slotDateTime.getTime() - 2 * 60 * 60 * 1000);
+      if (new Date() > cutoff) {
+        throw new Error('Cancellations must be made at least 2 hours before the appointment start time.');
+      }
+    }
+  }
+
   const [, updated] = await prisma.$transaction([
     prisma.availabilitySlot.update({
       where: { id: appointment.slotId },
@@ -201,6 +228,11 @@ export const cancelAppointment = async (appointmentId: string, userId: string, r
 export const completeAppointment = async (appointmentId: string, userId: string) => {
   const doctor = await prisma.doctor.findUnique({ where: { userId } });
   if (!doctor) throw new Error('Doctor profile not found');
+
+  const suspended = await isDoctorSuspended({ doctorId: doctor.id });
+  if (suspended) {
+    throw new Error('Doctor account is currently suspended');
+  }
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
@@ -234,6 +266,11 @@ export const rescheduleAppointment = async (appointmentId: string, newSlotId: st
   if (!newSlot) throw new Error('New slot not found');
   if (newSlot.isBooked) throw new Error('Slot is already booked');
   if (newSlot.doctorId !== appointment.doctorId) throw new Error('Slot does not belong to the same doctor');
+
+  const suspended = await isDoctorSuspended({ doctorId: appointment.doctorId });
+  if (suspended) {
+    throw new Error('This doctor is currently suspended and cannot accept appointments.');
+  }
 
   const [,, updated] = await prisma.$transaction([
     // Free old slot
@@ -327,7 +364,7 @@ export const resendAppointmentReminder = async (appointmentId: string, userId: s
     where: { id: appointmentId },
     include: {
       slot: true,
-      doctor: { include: { user: { select: { email: true } } } },
+      doctor: { select: { name: true, specialization: true, user: { select: { email: true } } } },
       patient: { include: { user: { select: { email: true, phone: true } } } },
     },
   });
@@ -341,7 +378,7 @@ export const resendAppointmentReminder = async (appointmentId: string, userId: s
     try {
       await sendAppointmentReminder(patientEmail, {
         patientName: patientEmail.split('@')[0],
-        doctorName: `Dr. ${appointment.doctor.specialization}`,
+        doctorName: `Dr. ${appointment.doctor.name || appointment.doctor.user.email.split('@')[0]}`,
         date: appointment.slot.slotDate.toDateString(),
         startTime: appointment.slot.startTime,
       });
@@ -354,7 +391,7 @@ export const resendAppointmentReminder = async (appointmentId: string, userId: s
     try {
       await sendBookingConfirmationSMS(
         patientPhone,
-        `Dr. ${appointment.doctor.specialization}`,
+        `Dr. ${appointment.doctor.name || appointment.doctor.user.email.split('@')[0]}`,
         appointment.slot.slotDate.toDateString(),
         appointment.slot.startTime
       );

@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '../../config/db';
 import { env } from '../../config/env';
+import { isDoctorSuspended } from '../../lib/suspension';
+import { sendVerificationEmail } from '../../lib/mailer';
 import type { RegisterInput, LoginInput } from './auth.schema';
 
 export const signAccessToken = (userId: string, role: string) =>
@@ -22,37 +24,72 @@ export const registerUser = async (data: RegisterInput) => {
   const existing = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
-  if (existing) throw new Error('Email already registered');
+  if (existing) {
+    // Anti-enumeration: do not reveal whether the account already exists
+    throw new Error('Unable to complete registration. If you already have an account, please sign in.');
+  }
 
   const passwordHash = await bcrypt.hash(data.password, env.BCRYPT_ROUNDS);
 
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
+  const user = await prisma.$transaction(async (tx) => {
+    const newUser = await tx.user.create({
       data: {
         email: normalizedEmail,
+        name: data.name.trim(),
         passwordHash,
         role: data.role,
-        phone: data.phone,
+        phone: data.phone.trim(),
+        emailVerified: true, // Auto-verified for the time being
+        verificationToken: null,
+        verificationTokenExpiresAt: null,
       },
     });
 
     if (data.role === 'DOCTOR') {
-      if (!data.specialization || !data.licenseNumber || !data.consultationFee)
-        throw new Error('Doctor fields required');
+      if (!data.specialization || !data.licenseNumber || !data.consultationFee) {
+        throw new Error('Doctor credentials (specialization, license, fee) required');
+      }
       await tx.doctor.create({
         data: {
-          userId: user.id,
+          userId: newUser.id,
+          name: data.name.trim(),
           specialization: data.specialization,
           licenseNumber: data.licenseNumber,
+          medicalCouncil: data.medicalCouncil?.trim() || null,
+          certificateUrl: data.certificateUrl || null,
           consultationFee: data.consultationFee,
+          experience: data.experienceYears,
+          bio: data.bio,
         },
       });
     } else {
-      await tx.patient.create({ data: { userId: user.id } });
+      await tx.patient.create({
+        data: {
+          userId: newUser.id,
+          gender: data.gender || undefined,
+          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        },
+      });
     }
 
-    return { id: user.id, email: user.email, role: user.role };
+    return {
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+      emailVerified: true,
+    };
   });
+
+  // Verification email link dispatch temporarily bypassed
+  // const verificationToken = crypto.randomBytes(32).toString('hex');
+  // const verificationUrl = `${env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+  // await sendVerificationEmail(normalizedEmail, verificationUrl, data.name.trim());
+
+  return {
+    ...user,
+    message: 'Account created successfully! You can now sign in.',
+  };
 };
 
 export const loginUser = async (data: LoginInput) => {
@@ -67,13 +104,18 @@ export const loginUser = async (data: LoginInput) => {
     throw new Error('Invalid email or password');
   }
 
-  if ((user as any).isActive === false) {
+  // Temporarily bypass email verification check
+  // if (!user.emailVerified) {
+  //   throw new Error('Please verify your email address before logging in. Check your inbox for the verification link.');
+  // }
+
+  if (user.isActive === false) {
     throw new Error('Account is deactivated');
   }
 
   if (user.role === 'DOCTOR') {
-    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id } });
-    if (doctor && (doctor as any).isSuspended) {
+    const suspended = await isDoctorSuspended({ userId: user.id });
+    if (suspended) {
       throw new Error('Doctor account is currently suspended');
     }
   }
@@ -84,8 +126,63 @@ export const loginUser = async (data: LoginInput) => {
   return {
     accessToken,
     refreshToken,
-    user: { id: user.id, email: user.email, role: user.role },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, emailVerified: user.emailVerified },
   };
+};
+
+export const verifyEmailToken = async (token: string) => {
+  if (!token) {
+    throw new Error('Verification token is required');
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { verificationToken: token },
+  });
+
+  if (!user) {
+    throw new Error('Invalid or expired verification token');
+  }
+
+  if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt < new Date()) {
+    throw new Error('Verification link has expired. Please request a new verification email.');
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: true,
+      verificationToken: null,
+      verificationTokenExpiresAt: null,
+    },
+  });
+
+  return { message: 'Email verified successfully. You can now log in to your account.' };
+};
+
+export const resendVerificationToken = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+  // Anti-enumeration: don't disclose whether email exists or is already verified
+  if (!user || user.emailVerified) {
+    return { message: 'If an unverified account exists with that email, a verification link has been sent.' };
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      verificationToken,
+      verificationTokenExpiresAt,
+    },
+  });
+
+  const verificationUrl = `${env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+  await sendVerificationEmail(normalizedEmail, verificationUrl, user.name || undefined);
+
+  return { message: 'If an unverified account exists with that email, a verification link has been sent.' };
 };
 
 export const refreshAccessToken = async (token: string) => {
@@ -96,13 +193,13 @@ export const refreshAccessToken = async (token: string) => {
   const user = await prisma.user.findUnique({ where: { id: existing.userId } });
   if (!user) throw new Error('User not found');
 
-  if ((user as any).isActive === false) {
+  if (user.isActive === false) {
     throw new Error('Account is deactivated');
   }
 
   if (user.role === 'DOCTOR') {
-    const doctor = await prisma.doctor.findUnique({ where: { userId: user.id } });
-    if (doctor && (doctor as any).isSuspended) {
+    const suspended = await isDoctorSuspended({ userId: user.id });
+    if (suspended) {
       throw new Error('Doctor account is currently suspended');
     }
   }

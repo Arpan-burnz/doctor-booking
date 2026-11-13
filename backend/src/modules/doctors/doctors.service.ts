@@ -1,15 +1,23 @@
 import { prisma } from '../../config/db';
+import { isDoctorSuspended } from '../../lib/suspension';
+import { isSlotExpired } from '../slots/slots.service';
 
 export const getAllDoctors = async (specialization?: string) => {
-  return prisma.doctor.findMany({
+  const doctors = await prisma.doctor.findMany({
     where: {
       isVerified: true,
+      isSuspended: false,
       ...(specialization ? { specialization } : {}),
     },
     include: {
       user: { select: { email: true, phone: true } },
       reviews: { select: { rating: true } },
     },
+  });
+
+  return doctors.map(d => {
+    const { certificateUrl, ...safeDoctor } = d;
+    return safeDoctor;
   });
 };
 
@@ -22,11 +30,18 @@ export const getDoctorById = async (id: string) => {
     },
   });
   if (!doctor) throw new Error('Doctor not found');
-  return doctor;
+  const isSuspended = await isDoctorSuspended({ doctorId: id });
+  const { certificateUrl, ...safeDoctor } = doctor;
+  return { ...safeDoctor, isSuspended };
 };
 
 export const getDoctorSlots = async (doctorId: string, date?: string) => {
-  return prisma.availabilitySlot.findMany({
+  const suspended = await isDoctorSuspended({ doctorId });
+  if (suspended) {
+    return [];
+  }
+
+  const slots = await prisma.availabilitySlot.findMany({
     where: {
       doctorId,
       isBooked: false,
@@ -35,6 +50,9 @@ export const getDoctorSlots = async (doctorId: string, date?: string) => {
     },
     orderBy: { startTime: 'asc' },
   });
+
+  const now = new Date();
+  return slots.filter((slot) => !isSlotExpired(slot.slotDate, slot.startTime, now));
 };
 
 export const verifyDoctor = async (doctorId: string) => {
@@ -66,7 +84,8 @@ export const getDoctorProfile = async (userId: string) => {
     },
   });
   if (!doctor) throw new Error('Doctor profile not found');
-  return doctor;
+  const isSuspended = await isDoctorSuspended({ doctorId: doctor.id });
+  return { ...doctor, isSuspended };
 };
 
 export const getDoctorDashboardStats = async (userId: string) => {
