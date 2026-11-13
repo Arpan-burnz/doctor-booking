@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     '*.devtunnels.ms',
     'localhost',
     '127.0.0.1',
+    '10.0.2.2',
+    '10.0.2.2:3000',
+    '192.168.29.12',
+    '192.168.29.12:3000',
   ],
   async rewrites() {
     return [
